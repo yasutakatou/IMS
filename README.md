@@ -21,6 +21,11 @@ In other words, you can use the following
 1. Invite this tool to the channel you are throwing the monitoring message into. The tool checks in the messages
 2. Periodically, the incidents will run and display a list of messages that have not been reacted to, so check the unacted ones and leave a history of your responses in the thread.
 
+```
+ - - 2021/05/08 23:13:15 - -
+[message] [Rule1] Error test2 [date] 2021/05/05 12:47:27
+```
+
 This makes it possible to
 
 1. Identify unanswered alerts
@@ -187,15 +192,15 @@ white_check_mark
   -auto
         [-auto=config auto read/write mode (true is enable)] (default true)
   -config string
-        [-config=config file)] (default "inco.ini")
+        [-config=config file)] (default "IMS.ini")
   -debug
         [-debug=debug mode (true is enable)]
   -log
         [-log=logging mode (true is enable)]
   -loop int
-        [-loop=checl loop time. ] (default 30)
-  -only
-        [-only=only check and exit mode.] (default true)
+        [-loop=incident check loop time. ] (default 30)
+  -onlyincident
+        [-onlyincident=incident check and exit mode.]
   -test string
         [-test=Test what happens when you set the message.]
   -verbose
