@@ -14,7 +14,12 @@ This tool enables easy incident management through chat, accelerating ChatOps!
 
 This tool has two major functions.
 1. check the posted messages according to the rules, label them if they fit the rules, and repost them to the incidents management channel.
+
+![2](https://user-images.githubusercontent.com/22161385/117542584-2f2aaf00-b054-11eb-8405-570a21570f9c.png)
+
 2. Check if there are any reactions in the incidents management channel, and output the ones that are not there.
+
+![1](https://user-images.githubusercontent.com/22161385/117542581-2d60eb80-b054-11eb-893e-d61355040935.png)
 
 In other words, you can use the following
 
