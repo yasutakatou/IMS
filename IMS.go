@@ -67,6 +67,7 @@ func main() {
 	_verbose := flag.Bool("verbose", false, "[-verbose=incident output verbose (true is enable)]")
 	_test := flag.String("test", "", "[-test=Test what happens when you set the message.]")
 	_autoRW := flag.Bool("auto", true, "[-auto=config auto read/write mode (true is enable)]")
+	_reverse := flag.Bool("reverse", false, "[-reverse=check rule to reverse (true is enable)]")
 
 	flag.Parse()
 
@@ -81,7 +82,7 @@ func main() {
 	}
 
 	if *_test != "" {
-		testRule(*_test)
+		testRule(*_test, *_reverse)
 		os.Exit(0)
 	}
 
@@ -114,7 +115,7 @@ func main() {
 		fmt.Println("ERROR", err)
 	}
 
-	ruleChecker()
+	ruleChecker(*_reverse)
 
 	for {
 		incident(*_verbose)
@@ -123,10 +124,10 @@ func main() {
 	os.Exit(0)
 }
 
-func testRule(message string) {
+func testRule(message string, reverse bool) {
 	fmt.Println("[Test] " + message)
 
-	result := checkMessage(message)
+	result := checkMessage(message, reverse)
 	if result != 0 {
 		fmt.Printf("this message include rule (%d)!\n", result)
 	} else {
@@ -297,7 +298,7 @@ func postMessage(channelInt int, message string) {
 	}
 }
 
-func ruleChecker() {
+func ruleChecker(reverse bool) {
 	appToken := os.Getenv("SLACK_APP_TOKEN")
 	if appToken == "" {
 	}
@@ -344,7 +345,7 @@ func ruleChecker() {
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
 						debugLog("receive message: " + ev.Text)
-						result := checkMessage(ev.Text)
+						result := checkMessage(ev.Text, reverse)
 						if result != 0 && channelMatch(ev.Channel) == false {
 							postMessage(result-1, ev.Text)
 						} else if channelMatch(ev.Channel) == false {
@@ -379,7 +380,7 @@ func markReaction(channnel, ts string) {
 	}
 }
 
-func checkMessage(message string) int {
+func checkMessage(message string, reverse bool) int {
 	wdays := [...]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
 
 	const layout = "2006/01/02 15:04:05"
@@ -389,19 +390,35 @@ func checkMessage(message string) int {
 	for i := 0; i < len(rules); i++ {
 		debugLog("messageRegex: " + rules[i].TARGET)
 		messageRegex := regexp.MustCompile(rules[i].TARGET)
-		if messageRegex.MatchString(message) == true {
-			debugLog("messageRegex: ok")
-			debugLog("nowDate: " + nowDate)
 
-			debugLog("dateRegex: " + rules[i].EXCLUDE)
-			dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
-			if dateRegex.MatchString(nowDate) == true {
-				debugLog("dateRegex: ok")
-				if act := incidentCheck(rules[i].LABEL); act != 0 {
-					return act
+		if reverse == true {
+			if messageRegex.MatchString(message) == false {
+				debugLog("messageRegex: ok")
+				debugLog("nowDate: " + nowDate)
+
+				debugLog("dateRegex: " + rules[i].EXCLUDE)
+				dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
+				if dateRegex.MatchString(nowDate) == false {
+					debugLog("dateRegex: ok")
+					if act := incidentCheck(rules[i].LABEL); act != 0 {
+						return act
+					}
 				}
 			}
+		} else {
+			if messageRegex.MatchString(message) == true {
+				debugLog("messageRegex: ok")
+				debugLog("nowDate: " + nowDate)
 
+				debugLog("dateRegex: " + rules[i].EXCLUDE)
+				dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
+				if dateRegex.MatchString(nowDate) == true {
+					debugLog("dateRegex: ok")
+					if act := incidentCheck(rules[i].LABEL); act != 0 {
+						return act
+					}
+				}
+			}
 		}
 	}
 	return 0
