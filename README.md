@@ -206,6 +206,8 @@ white_check_mark
         [-loop=incident check loop time. ] (default 30)
   -onlyincident
         [-onlyincident=incident check and exit mode.]
+  -reverse
+        [-reverse=check rule to reverse (true is enable)]
   -test string
         [-test=Test what happens when you set the message.]
   -verbose
@@ -230,11 +232,15 @@ Specify the log file name.
 
 Interval between incidents checks (in seconds)
 
-## -only
+## -onlyincident
 
 If this option is specified, the tool will exit after the incidents check.
 
 note) This can be used if you want to move the incident manually.
+
+## -reverse
+
+all check rules to reverse
 
 ## -test
 
