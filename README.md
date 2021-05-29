@@ -274,11 +274,6 @@ NG [message] test message [date] 2021/05/02 17:54:05
 
 note) In this mode, the name of the person who responded will also be displayed.
 
-# FYIs
-
-[Goで標準出力をキャプチャする](https://journal.lampetty.net/entry/capturing-stdout-in-golang)<br>
-[Go言語で文字コード変換](https://qiita.com/uchiko/items/1810ddacd23fd4d3c934)
-
 # license
 
 Apache-2.0 License<br>
