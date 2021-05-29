@@ -25,14 +25,6 @@ import (
 	"github.com/slack-go/slack/slackevents"
 )
 
-//FYI: https://journal.lampetty.net/entry/capturing-stdout-in-golang
-type Capturer struct {
-	saved         *os.File
-	bufferChannel chan string
-	out           *os.File
-	in            *os.File
-}
-
 type ruleData struct {
 	TARGET  string
 	EXCLUDE string
