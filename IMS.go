@@ -8,11 +8,8 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -22,8 +19,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/slack-go/slack/socketmode"
-	"golang.org/x/text/encoding/japanese"
-	"golang.org/x/text/transform"
 	"gopkg.in/ini.v1"
 
 	"github.com/slack-go/slack"
@@ -431,40 +426,4 @@ func incidentCheck(incidentName string) int {
 		}
 	}
 	return 0
-}
-
-// 標準出力をキャプチャする
-func (c *Capturer) StartCapturingStdout() {
-	c.saved = os.Stdout
-	var err error
-	c.in, c.out, err = os.Pipe()
-	if err != nil {
-		panic(err)
-	}
-
-	os.Stdout = c.out
-	c.bufferChannel = make(chan string)
-	go func() {
-		var b bytes.Buffer
-		io.Copy(&b, c.in)
-		c.bufferChannel <- b.String()
-	}()
-}
-
-// キャプチャを停止する
-func (c *Capturer) StopCapturingStdout() string {
-	c.out.Close()
-	os.Stdout = c.saved
-	return <-c.bufferChannel
-}
-
-//FYI: https://qiita.com/uchiko/items/1810ddacd23fd4d3c934
-// ShiftJIS から UTF-8
-func sjis_to_utf8(str string) string {
-	ret, err := ioutil.ReadAll(transform.NewReader(strings.NewReader(str), japanese.ShiftJIS.NewDecoder()))
-	if err != nil {
-		fmt.Printf("Convert Error: %s\n", err)
-		return ""
-	}
-	return string(ret)
 }
