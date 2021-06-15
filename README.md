@@ -1,4 +1,4 @@
-# slacheck
+# IMS
 Incident management tool with slack.
 
 # (WIP)
@@ -44,18 +44,18 @@ All this can be done on slack!
 If you want to put it under the path, you can use the following.
 
 ```
-go get github.com/yasutakatou/slacheck
+go get github.com/yasutakatou/IMS
 ```
 
 If you want to create a binary and copy it yourself, use the following.
 
 ```
-git clone https://github.com/yasutakatou/slacheck
-cd slacheck
+git clone https://github.com/yasutakatou/IMS
+cd IMS
 go build .
 ```
 
-[or download binary from release page.](https://github.com/yasutakatou/slacheck/releases)
+[or download binary from release page.](https://github.com/yasutakatou/IMS/releases)
 save binary file, copy to entryed execute path directory.
 
 # uninstall
@@ -247,7 +247,7 @@ all check rules to reverse
 Give a message to check the rule and exit the tool.
 
 ```
->slacheck -test="Error test"
+>IMS -test="Error test"
 
 [Test] Error test
 this message include rule (1)!
