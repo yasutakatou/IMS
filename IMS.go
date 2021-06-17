@@ -8,6 +8,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -28,19 +29,21 @@ import (
 type ruleData struct {
 	TARGET  string
 	EXCLUDE string
+	HEAD    string
 	LABEL   string
 }
 
 type incidentData struct {
 	LABEL    string
 	CHANNNEL string
-	HEAD     string
 	LIMIT    int
 }
 
 var (
 	debug, logging bool
 	label          string
+	defaultChannel string
+	report         string
 	incidents      []incidentData
 	rules          []ruleData
 )
@@ -49,8 +52,8 @@ func main() {
 	_Debug := flag.Bool("debug", false, "[-debug=debug mode (true is enable)]")
 	_Logging := flag.Bool("log", false, "[-log=logging mode (true is enable)]")
 	_Config := flag.String("config", "IMS.ini", "[-config=config file)]")
-	_loop := flag.Int("loop", 30, "[-loop=incident check loop time. ]")
-	_onlyincident := flag.Bool("onlyincident", false, "[-onlyincident=incident check and exit mode.]")
+	_loop := flag.Int("loop", 30, "[-loop=incident check loop time (Hour). ]")
+	_onlyReport := flag.Bool("onlyReport", false, "[-onlyReport=incident check and exit mode.]")
 	_verbose := flag.Bool("verbose", false, "[-verbose=incident output verbose (true is enable)]")
 	_test := flag.String("test", "", "[-test=Test what happens when you set the message.]")
 	_autoRW := flag.Bool("auto", true, "[-auto=config auto read/write mode (true is enable)]")
@@ -73,8 +76,35 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *_onlyincident == true {
-		incident(*_verbose)
+	appToken := os.Getenv("SLACK_APP_TOKEN")
+	if appToken == "" {
+		fmt.Fprintf(os.Stderr, "SLACK_APP_TOKEN must be set.\n")
+		os.Exit(1)
+	}
+
+	if !strings.HasPrefix(appToken, "xapp-") {
+		fmt.Fprintf(os.Stderr, "SLACK_APP_TOKEN must have the prefix \"xapp-\".")
+	}
+
+	botToken := os.Getenv("SLACK_BOT_TOKEN")
+	if botToken == "" {
+		fmt.Fprintf(os.Stderr, "SLACK_BOT_TOKEN must be set.\n")
+		os.Exit(1)
+	}
+
+	if !strings.HasPrefix(botToken, "xoxb-") {
+		fmt.Fprintf(os.Stderr, "SLACK_BOT_TOKEN must have the prefix \"xoxb-\".")
+	}
+
+	api := slack.New(
+		botToken,
+		slack.OptionDebug(debug),
+		slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
+		slack.OptionAppLevelToken(appToken),
+	)
+
+	if *_onlyReport == true {
+		incident(api, *_verbose)
 		os.Exit(0)
 	}
 
@@ -102,11 +132,11 @@ func main() {
 		fmt.Println("ERROR", err)
 	}
 
-	ruleChecker(*_reverse)
+	ruleChecker(api, *_reverse)
 
 	for {
-		incident(*_verbose)
-		time.Sleep(time.Second * time.Duration(*_loop))
+		incident(api, *_verbose)
+		time.Sleep(time.Hour * time.Duration(*_loop))
 	}
 	os.Exit(0)
 }
@@ -122,13 +152,13 @@ func testRule(message string, reverse bool) {
 	}
 }
 
-func incident(verbose bool) {
+func incident(api *slack.Client, verbose bool) {
 	const layout = "2006/01/02 15:04:05"
 	t := time.Now()
-	fmt.Println(" - - " + t.Format(layout) + " - -")
 
-	botToken := os.Getenv("SLACK_BOT_TOKEN")
-	api := slack.New(botToken)
+	ret := ""
+	dates := " - - " + t.Format(layout) + " - -"
+	debugLog(ret)
 
 	for i := 0; i < len(incidents); i++ {
 		debugLog("incident: " + incidents[i].CHANNNEL)
@@ -139,19 +169,50 @@ func incident(verbose bool) {
 			return
 		}
 		for _, message := range messages.Messages {
-			name := checkReaction(message.Reactions)
+			mess := message.Text
+
+			if len(mess) == 0 {
+				actualAttachmentJson, err := json.Marshal(message.Attachments)
+				if err != nil {
+					fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
+				}
+				mess = string(actualAttachmentJson)
+			}
+
+			name := checkReaction(api, message.Reactions)
 			if verbose == true {
 				if name == "" {
-					fmt.Println("NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp))
+					stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
+					debugLog(stra)
+					ret = ret + stra + "\n"
 				} else {
-					fmt.Println("OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name)
+					stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+					debugLog(stra)
+					ret = ret + stra + "\n"
 				}
 			} else {
 				if name == "" {
-					fmt.Println("[message] " + message.Text + " [date] " + convertTime(message.Timestamp))
+					stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
+					debugLog(stra)
+					ret = ret + stra + "\n"
 				}
 			}
 		}
+	}
+
+	postTextFile(api, ret, report, dates)
+}
+
+func postTextFile(api *slack.Client, strs, repChan, dates string) {
+	params := slack.FileUploadParameters{
+		Title:    dates,
+		Filetype: "txt",
+		Content:  strs,
+		Channels: []string{repChan},
+	}
+	_, err := api.UploadFile(params)
+	if err != nil {
+		debugLog(fmt.Sprintf("%s\n", err))
 	}
 }
 
@@ -169,12 +230,12 @@ func convertTime(unixTime string) string {
 	return t.Format(layout)
 }
 
-func checkReaction(reactions []slack.ItemReaction) string {
+func checkReaction(api *slack.Client, reactions []slack.ItemReaction) string {
 	for _, reaction := range reactions {
 		if reaction.Name == label {
 			users := ""
 			for _, user := range reaction.Users {
-				users = users + " " + getUsername(user)
+				users = users + " " + getUsername(api, user)
 			}
 			return users
 		}
@@ -182,8 +243,7 @@ func checkReaction(reactions []slack.ItemReaction) string {
 	return ""
 }
 
-func getUsername(userID string) string {
-	api := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
+func getUsername(api *slack.Client, userID string) string {
 	user, err := api.GetUserInfo(userID)
 	if err != nil {
 		fmt.Printf("%s\n", err)
@@ -199,7 +259,7 @@ func Exists(filename string) bool {
 
 func loadConfig(configFile string) {
 	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label"}
+	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report"}
 
 	rules = nil
 	incidents = nil
@@ -214,27 +274,30 @@ func loadConfig(configFile string) {
 	setStructs("Rules", cfg.Section("Rules").Body(), 0)
 	setStructs("Incidents", cfg.Section("Incidents").Body(), 1)
 	setStructs("Label", cfg.Section("Label").Body(), 2)
+	setStructs("Report", cfg.Section("Report").Body(), 3)
 }
 
 func setStructs(configType, datas string, flag int) {
 	debugLog(" -- " + configType + " --")
 
 	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
-		if len(v) > 0 && flag != 2 {
+		if len(v) > 0 && flag != 2 && flag != 3 {
 			if strings.Index(v, "\t") != -1 {
 				strs := strings.Split(v, "\t")
 
 				switch flag {
 				case 0:
-					if len(strs) == 3 {
-						rules = append(rules, ruleData{TARGET: strs[0], EXCLUDE: strs[1], LABEL: strs[2]})
+					if len(strs) == 4 {
+						rules = append(rules, ruleData{TARGET: strs[0], EXCLUDE: strs[1], HEAD: strs[2], LABEL: strs[3]})
 						debugLog(v)
 					}
 				case 1:
-					if len(strs) == 4 {
-						convInt, err := strconv.Atoi(strs[3])
+					if strs[0] == "DEFAULT" {
+						defaultChannel = strs[1]
+					} else if len(strs) == 3 {
+						convInt, err := strconv.Atoi(strs[2])
 						if err == nil {
-							incidents = append(incidents, incidentData{LABEL: strs[0], CHANNNEL: strs[1], HEAD: strs[2], LIMIT: convInt})
+							incidents = append(incidents, incidentData{LABEL: strs[0], CHANNNEL: strs[1], LIMIT: convInt})
 							debugLog(v)
 						}
 					}
@@ -242,6 +305,9 @@ func setStructs(configType, datas string, flag int) {
 			}
 		} else if flag == 2 {
 			label = v
+			debugLog(v)
+		} else if flag == 3 {
+			report = v
 			debugLog(v)
 		}
 	}
@@ -277,40 +343,21 @@ func debugLog(message string) {
 	fmt.Fprintln(file, message)
 }
 
-func postMessage(channelInt int, message string) {
-	api := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
-	_, _, err := api.PostMessage(incidents[channelInt].CHANNNEL, slack.MsgOptionText(incidents[channelInt].HEAD+" "+message, false), slack.MsgOptionAsUser(true))
+func postMessage(api *slack.Client, channelInt int, message string) {
+	_, _, err := api.PostMessage(incidents[channelInt].CHANNNEL, slack.MsgOptionText(rules[channelInt].HEAD+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
 		fmt.Printf("failed posting message: %v", err)
 	}
 }
 
-func ruleChecker(reverse bool) {
-	appToken := os.Getenv("SLACK_APP_TOKEN")
-	if appToken == "" {
+func postMessageStr(api *slack.Client, channelStr string, message string) {
+	_, _, err := api.PostMessage(channelStr, slack.MsgOptionText(message, false), slack.MsgOptionAsUser(true))
+	if err != nil {
+		fmt.Printf("failed posting message: %v", err)
 	}
+}
 
-	if !strings.HasPrefix(appToken, "xapp-") {
-		fmt.Fprintf(os.Stderr, "SLACK_APP_TOKEN must have the prefix \"xapp-\".")
-	}
-
-	botToken := os.Getenv("SLACK_BOT_TOKEN")
-	if botToken == "" {
-		fmt.Fprintf(os.Stderr, "SLACK_BOT_TOKEN must be set.\n")
-		os.Exit(1)
-	}
-
-	if !strings.HasPrefix(botToken, "xoxb-") {
-		fmt.Fprintf(os.Stderr, "SLACK_BOT_TOKEN must have the prefix \"xoxb-\".")
-	}
-
-	api := slack.New(
-		botToken,
-		slack.OptionDebug(debug),
-		slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
-		slack.OptionAppLevelToken(appToken),
-	)
-
+func ruleChecker(api *slack.Client, reverse bool) {
 	client := socketmode.New(
 		api,
 		socketmode.OptionDebug(debug),
@@ -333,10 +380,18 @@ func ruleChecker(reverse bool) {
 					case *slackevents.MessageEvent:
 						debugLog("receive message: " + ev.Text)
 						result := checkMessage(ev.Text, reverse)
-						if result != 0 && channelMatch(ev.Channel) == false {
-							postMessage(result-1, ev.Text)
-						} else if channelMatch(ev.Channel) == false {
-							markReaction(ev.Channel, ev.TimeStamp)
+						if reverse == true {
+							if result == 0 {
+								postMessageStr(api, defaultChannel, ev.Text)
+							} else {
+								markReaction(api, ev.Channel, ev.TimeStamp)
+							}
+						} else {
+							if result != 0 && channelMatch(ev.Channel) == false {
+								postMessage(api, result-1, ev.Text)
+							} else if channelMatch(ev.Channel) == false {
+								markReaction(api, ev.Channel, ev.TimeStamp)
+							}
 						}
 					}
 				}
@@ -357,10 +412,9 @@ func channelMatch(channel string) bool {
 	return false
 }
 
-func markReaction(channnel, ts string) {
+func markReaction(api *slack.Client, channnel, ts string) {
 	msgRef := slack.NewRefToMessage(channnel, ts)
 
-	api := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 	if err := api.AddReaction(label, msgRef); err != nil {
 		fmt.Printf("Error adding reaction: %s\n", err)
 		return
