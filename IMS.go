@@ -42,7 +42,7 @@ type incidentData struct {
 var (
 	debug, logging bool
 	label          string
-	defaultChannel string
+	defaultChannel []string
 	report         string
 	incidents      []incidentData
 	rules          []ruleData
@@ -293,7 +293,9 @@ func setStructs(configType, datas string, flag int) {
 					}
 				case 1:
 					if strs[0] == "DEFAULT" {
-						defaultChannel = strs[1]
+						defaultChannel = append(defaultChannel, strs[1])
+						defaultChannel = append(defaultChannel, strs[2])
+						debugLog("default channel: " + v)
 					} else if len(strs) == 3 {
 						convInt, err := strconv.Atoi(strs[2])
 						if err == nil {
@@ -350,8 +352,8 @@ func postMessage(api *slack.Client, channelInt int, message string) {
 	}
 }
 
-func postMessageStr(api *slack.Client, channelStr string, message string) {
-	_, _, err := api.PostMessage(channelStr, slack.MsgOptionText(message, false), slack.MsgOptionAsUser(true))
+func postMessageStr(api *slack.Client, channelStr, channelLabel string, message string) {
+	_, _, err := api.PostMessage(channelStr, slack.MsgOptionText(channelLabel+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
 		fmt.Printf("failed posting message: %v", err)
 	}
@@ -378,19 +380,21 @@ func ruleChecker(api *slack.Client, reverse bool) {
 					innerEvent := eventsAPIEvent.InnerEvent
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
-						debugLog("receive message: " + ev.Text)
-						result := checkMessage(ev.Text, reverse)
-						if reverse == true {
-							if result == 0 {
-								postMessageStr(api, defaultChannel, ev.Text)
+						if len(ev.Text) > 0 {
+							debugLog("receive message: " + ev.Text)
+							result := checkMessage(ev.Text, reverse)
+							if reverse == true {
+								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
+									postMessageStr(api, defaultChannel[0], defaultChannel[1], ev.Text)
+								} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
+									markReaction(api, ev.Channel, ev.TimeStamp)
+								}
 							} else {
-								markReaction(api, ev.Channel, ev.TimeStamp)
-							}
-						} else {
-							if result != 0 && channelMatch(ev.Channel) == false {
-								postMessage(api, result-1, ev.Text)
-							} else if channelMatch(ev.Channel) == false {
-								markReaction(api, ev.Channel, ev.TimeStamp)
+								if result != 0 && channelMatch(ev.Channel) == false {
+									postMessage(api, result-1, ev.Text)
+								} else if channelMatch(ev.Channel) == false {
+									markReaction(api, ev.Channel, ev.TimeStamp)
+								}
 							}
 						}
 					}
@@ -432,32 +436,16 @@ func checkMessage(message string, reverse bool) int {
 		debugLog("messageRegex: " + rules[i].TARGET)
 		messageRegex := regexp.MustCompile(rules[i].TARGET)
 
-		if reverse == true {
-			if messageRegex.MatchString(message) == false {
-				debugLog("messageRegex: ok")
-				debugLog("nowDate: " + nowDate)
+		if messageRegex.MatchString(message) == true {
+			debugLog("messageRegex: ok")
+			debugLog("nowDate: " + nowDate)
 
-				debugLog("dateRegex: " + rules[i].EXCLUDE)
-				dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
-				if dateRegex.MatchString(nowDate) == false {
-					debugLog("dateRegex: ok")
-					if act := incidentCheck(rules[i].LABEL); act != 0 {
-						return act
-					}
-				}
-			}
-		} else {
-			if messageRegex.MatchString(message) == true {
-				debugLog("messageRegex: ok")
-				debugLog("nowDate: " + nowDate)
-
-				debugLog("dateRegex: " + rules[i].EXCLUDE)
-				dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
-				if dateRegex.MatchString(nowDate) == true {
-					debugLog("dateRegex: ok")
-					if act := incidentCheck(rules[i].LABEL); act != 0 {
-						return act
-					}
+			debugLog("dateRegex: " + rules[i].EXCLUDE)
+			dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
+			if dateRegex.MatchString(nowDate) == true {
+				debugLog("dateRegex: ok")
+				if act := incidentCheck(rules[i].LABEL); act != 0 {
+					return act
 				}
 			}
 		}
