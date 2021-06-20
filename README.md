@@ -1,4 +1,5 @@
 # IMS
+
 Incident management tool with slack.
 
 # (WIP)
@@ -73,7 +74,7 @@ Please follow the steps below to set up your environment.
 	- select (Workspce)
 	- Create App
 - App-Level Tokens
-	-Generate Token and Scopes
+	- Generate Token and Scopes
 	- define (Name)
 	- Add Scope
 		- connections:write
@@ -88,6 +89,7 @@ Please follow the steps below to set up your environment.
 	- Bot Token Scopes
 		- channels:history
 		- chat:write
+		- files:write
 		- reactions:write
 		- users:read
 	- Install to Workspace
@@ -124,8 +126,6 @@ note) Have them participate in all the channels where you want to collect incide
 2. Get the ID of the slack channel where you want the string to be detected. -> config 
 3. Get the ID of the slack channel you want to have incidents checked. (Separate channels, etc. If necessary.)
 4. Use the test option to configure the string and time you want to detect. -> config [Rules]
-5. 
-
 
 # config file
 
@@ -141,12 +141,13 @@ Define rules for detecting messages.
 
 ```
 [Rules]
-.*Error.*	2[0-9]:.*:.*	CHANNEL1
+.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1
 ```
 
 1. include message (can use regex.)
 2. date range (can use regex.)
-3. channel label. If detect rule, post message to channel.
+3. post message used this to header. (you use to analyze label.)
+4. channel label. If detect rule, post message to channel.
 
 note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".
   If you detect message include "Fault" and every day at 10:00-12:00, rule is
@@ -162,17 +163,28 @@ This config for incidents managed channel.
 
 ```
 [Incidents]
-CHANNEL1	C021C9EC76C	20	[Rule1]	10
+CHANNEL1	C025FKF3QJV	20
 ```
 
 1. channel label
 2. channnel id for Incidents
-3. post message used this to header. (you use to analyze label.)
-4. Number of message to go back
+3. Number of message to go back
 
 note) 4. is too big, check more slowly..<br>
 
 note) not only single but can write plural rules by tsv.
+
+### Special Definition
+
+In the case of A mode, it defines the default incident registration destination when all the rules are not met.
+
+```
+DEFAULT	C025FKF3QJV	[Alert]
+```
+
+1. "DEFAULT" is static define.
+2. channnel id for Incidents.
+3. post message used this to header. (you use to analyze label.)
 
 ## [Label]
 
