@@ -242,6 +242,12 @@ note) This can be used if you want to move the incident manually.
 
 all check rules to reverse
 
+![1](https://user-images.githubusercontent.com/22161385/122678154-75148e80-d220-11eb-9c71-873538f8b5ed.png)
+
+It will be reversed as follows
+
+![2](https://user-images.githubusercontent.com/22161385/122678156-7776e880-d220-11eb-8fbe-d7e86222baca.png)
+
 ## -test
 
 Give a message to check the rule and exit the tool.
