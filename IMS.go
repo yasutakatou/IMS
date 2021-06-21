@@ -179,7 +179,7 @@ func incident(api *slack.Client, verbose bool) {
 				mess = string(actualAttachmentJson)
 			}
 
-			if len(mess) > 0 {
+			if len(mess) > 0 && mess != "null" {
 				name := checkReaction(api, message.Reactions)
 				if verbose == true {
 					if name == "" {
@@ -392,7 +392,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 							mess = string(actualAttachmentJson)
 						}
 
-						if len(mess) > 0 {
+						if len(mess) > 0 && mess != "null" {
 							debugLog("receive message: " + mess)
 							result := checkMessage(mess, reverse)
 							if reverse == true {
