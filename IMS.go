@@ -179,22 +179,24 @@ func incident(api *slack.Client, verbose bool) {
 				mess = string(actualAttachmentJson)
 			}
 
-			name := checkReaction(api, message.Reactions)
-			if verbose == true {
-				if name == "" {
-					stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
-					debugLog(stra)
-					ret = ret + stra + "\n"
+			if len(mess) > 0 {
+				name := checkReaction(api, message.Reactions)
+				if verbose == true {
+					if name == "" {
+						stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
+						debugLog(stra)
+						ret = ret + stra + "\n"
+					} else {
+						stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+						debugLog(stra)
+						ret = ret + stra + "\n"
+					}
 				} else {
-					stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
-					debugLog(stra)
-					ret = ret + stra + "\n"
-				}
-			} else {
-				if name == "" {
-					stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
-					debugLog(stra)
-					ret = ret + stra + "\n"
+					if name == "" {
+						stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
+						debugLog(stra)
+						ret = ret + stra + "\n"
+					}
 				}
 			}
 		}
@@ -392,7 +394,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 						if len(mess) > 0 {
 							debugLog("receive message: " + mess)
-							result := checkMessage(ev.Text, reverse)
+							result := checkMessage(mess, reverse)
 							if reverse == true {
 								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
 									postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
