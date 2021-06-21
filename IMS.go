@@ -380,18 +380,28 @@ func ruleChecker(api *slack.Client, reverse bool) {
 					innerEvent := eventsAPIEvent.InnerEvent
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
-						if len(ev.Text) > 0 {
-							debugLog("receive message: " + ev.Text)
+						mess := ev.Text
+
+						if len(mess) == 0 {
+							actualAttachmentJson, err := json.Marshal(ev.Attachments)
+							if err != nil {
+								fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
+							}
+							mess = string(actualAttachmentJson)
+						}
+
+						if len(mess) > 0 {
+							debugLog("receive message: " + mess)
 							result := checkMessage(ev.Text, reverse)
 							if reverse == true {
 								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
-									postMessageStr(api, defaultChannel[0], defaultChannel[1], ev.Text)
+									postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
 								} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
 									markReaction(api, ev.Channel, ev.TimeStamp)
 								}
 							} else {
 								if result != 0 && channelMatch(ev.Channel) == false {
-									postMessage(api, result-1, ev.Text)
+									postMessage(api, result-1, mess)
 								} else if channelMatch(ev.Channel) == false {
 									markReaction(api, ev.Channel, ev.TimeStamp)
 								}
