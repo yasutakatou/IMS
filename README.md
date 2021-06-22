@@ -13,7 +13,7 @@ This tool enables easy incident management through chat, accelerating ChatOps!
 
 # Feature
 
-This tool has two major functions.
+This tool has three major functions.
 1. check the posted messages according to the rules, label them if they fit the rules, and repost them to the incidents management channel.
 
 ![2](https://user-images.githubusercontent.com/22161385/117542584-2f2aaf00-b054-11eb-8405-570a21570f9c.png)
@@ -22,12 +22,14 @@ This tool has two major functions.
 
 ![1](https://user-images.githubusercontent.com/22161385/117542581-2d60eb80-b054-11eb-893e-d61355040935.png)
 
+3. Periodically post a list of unsupported alerts to the channel for report output.
+
+![image](https://user-images.githubusercontent.com/22161385/122943521-10893900-d3b2-11eb-8d90-db3896fa2d6b.png)
+
 In other words, you can use the following
 
 1. Invite this tool to the channel you are throwing the monitoring message into. The tool checks in the messages
 2. Periodically, the incidents will run and display a list of messages that have not been reacted to, so check the unacted ones and leave a history of your responses in the thread.
-
-![image](https://user-images.githubusercontent.com/22161385/122943521-10893900-d3b2-11eb-8d90-db3896fa2d6b.png)
 
 This makes it possible to
 
@@ -216,8 +218,8 @@ C0256BTKP54
         [-log=logging mode (true is enable)]
   -loop int
         [-loop=incident check loop time. ] (default 30)
-  -onlyincident
-        [-onlyincident=incident check and exit mode.]
+  -onlyReport
+        [-onlyReport=incident check and exit mode.]
   -reverse
         [-reverse=check rule to reverse (true is enable)]
   -test string
@@ -244,7 +246,7 @@ Specify the log file name.
 
 Interval between incidents checks (in seconds)
 
-## -onlyincident
+## -onlyReport
 
 If this option is specified, the tool will exit after the incidents check.
 
