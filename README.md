@@ -27,10 +27,7 @@ In other words, you can use the following
 1. Invite this tool to the channel you are throwing the monitoring message into. The tool checks in the messages
 2. Periodically, the incidents will run and display a list of messages that have not been reacted to, so check the unacted ones and leave a history of your responses in the thread.
 
-```
- - - 2021/05/08 23:13:15 - -
-[message] [Rule1] Error test2 [date] 2021/05/05 12:47:27
-```
+![image](https://user-images.githubusercontent.com/22161385/122943521-10893900-d3b2-11eb-8d90-db3896fa2d6b.png)
 
 This makes it possible to
 
@@ -176,7 +173,7 @@ note) not only single but can write plural rules by tsv.
 
 ### Special Definition
 
-In the case of A mode, it defines the default incident registration destination when all the rules are not met.
+In the case of -reverse mode, it defines the default incident registration destination when all the rules are not met.
 
 ```
 DEFAULT	C025FKF3QJV	[Alert]
@@ -196,11 +193,14 @@ note) [This page is a good reference for what marks can be used.](https://qiita.
 
 ```
 [Rules]
-.*Error.*	.*:.*:.*	CHANNEL1
+.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1
 [Incidents]
-CHANNEL1	C021C9EC76C	[Rule1]	10
+CHANNEL1	C025FKF3QJV	20
+DEFAULT	C025FKF3QJV	[Alert]
 [Label]
 white_check_mark
+[Report]
+C0256BTKP54
 ```
 
 # options
