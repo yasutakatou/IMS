@@ -52,7 +52,7 @@ func main() {
 	_Debug := flag.Bool("debug", false, "[-debug=debug mode (true is enable)]")
 	_Logging := flag.Bool("log", false, "[-log=logging mode (true is enable)]")
 	_Config := flag.String("config", "IMS.ini", "[-config=config file)]")
-	_loop := flag.Int("loop", 30, "[-loop=incident check loop time (Hour). ]")
+	_loop := flag.Int("loop", 24, "[-loop=incident check loop time (Hour). ]")
 	_onlyReport := flag.Bool("onlyReport", false, "[-onlyReport=incident check and exit mode.]")
 	_verbose := flag.Bool("verbose", false, "[-verbose=incident output verbose (true is enable)]")
 	_test := flag.String("test", "", "[-test=Test what happens when you set the message.]")
