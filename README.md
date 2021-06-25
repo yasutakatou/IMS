@@ -217,7 +217,7 @@ C0256BTKP54
   -log
         [-log=logging mode (true is enable)]
   -loop int
-        [-loop=incident check loop time. ] (default 30)
+        [-loop=incident check loop time. ] (default 24)
   -onlyReport
         [-onlyReport=incident check and exit mode.]
   -reverse
@@ -244,7 +244,7 @@ Specify the log file name.
 
 ## -loop
 
-Interval between incidents checks (in seconds)
+Interval between incidents checks (in Hours). Default is 24 Hour.
 
 ## -onlyReport
 
