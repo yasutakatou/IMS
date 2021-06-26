@@ -2,14 +2,12 @@
 
 Incident management tool with slack.
 
-# (WIP)
-
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
-But hasn't it changed that people are reading the messages and making decisions and responses?
-I'm using chat for a change!
-This tool enables easy incident management through chat, accelerating ChatOps!
+But hasn't it changed that people are reading the all messages and making decisions and responses?
+Let's change that!
+This tool enables easy incident management through chat, accelerating ChatOps!!
 
 # Feature
 
@@ -18,25 +16,27 @@ This tool has three major functions.
 
 ![2](https://user-images.githubusercontent.com/22161385/117542584-2f2aaf00-b054-11eb-8405-570a21570f9c.png)
 
+It is also possible to post actions that do not fit the reverse rule
+
 2. Check if there are any reactions in the incidents management channel, and output the ones that are not there.
 
 ![1](https://user-images.githubusercontent.com/22161385/117542581-2d60eb80-b054-11eb-893e-d61355040935.png)
 
-3. Periodically post a list of unsupported alerts to the channel for report output.
+3. Periodically post a list of unsupported alerts to report channel.
 
 ![image](https://user-images.githubusercontent.com/22161385/122943521-10893900-d3b2-11eb-8d90-db3896fa2d6b.png)
 
 In other words, you can use the following
 
-1. Invite this tool to the channel you are throwing the monitoring message into. The tool checks in the messages
-2. Periodically, the incidents will run and display a list of messages that have not been reacted to, so check the unacted ones and leave a history of your responses in the thread.
+1. Invite this tool to the channel you are throwing the monitoring message into. The tool checks in the all messages
+2. Periodically, the report will run and display a list of messages that have not been reacted to, so check the unacted ones and leave a history of your teams action in the thread.
 
 This makes it possible to
 
 1. Identify unanswered alerts
 2. Filter for known messages
+3. Your team can keep a history of responses to alerts.
 
-Add the addressed messages to the configuration so that the cycle of improvement can continue.
 All this can be done on slack!
 
 # installation
@@ -107,9 +107,9 @@ Please follow the steps below to set up your environment.
 		- @(Name)
 	- invite
 
-note) Have them participate in all the channels where you want to collect incidents.
+note) Bot have them participate in all the channels where you want to collect incidents.
 
-3. your os terminal
+3. your OS terminal
 	- set environment
 		- windows
 			- set SLACK_APP_TOKEN=xapp-...
@@ -121,18 +121,18 @@ note) Have them participate in all the channels where you want to collect incide
 
 # usecase
 
-1. Decide with your team what reaction you want the responded to be. -> config [Label]
-2. Get the ID of the slack channel where you want the string to be detected. -> config 
-3. Get the ID of the slack channel you want to have incidents checked. (Separate channels, etc. If necessary.)
-4. Use the test option to configure the string and time you want to detect. -> config [Rules]
+1. What alert messages will you respond to? Decide with your team what alert messages you will respond to, or ignore. -> config [Label]
+2. Decide on a channel for message retrieval, a channel for incident management, and a channel for reporting. -> config [Incidents]
+3. ecide which reaction mark will be used to mark the item as handled. -> config [Label]
+4. Define the channel for report output.-> config [Report]
 
 # config file
 
-Configs format is tab split values. The definition is ignored if you put sharp(#) at the beginning.
+Configs format is tab split values. The definition is ignore if you put sharp(#) at the beginning.
 
 ## auto read suppot
 
-config file supported auto read. so, you rewrite config file, tool not necessaly rerun, tool just read this.
+config file supported auto read. so, you rewrite config file, tool not necessaly rerun, tool just this.
 
 ## [Rules]
 
@@ -143,18 +143,18 @@ Define rules for detecting messages.
 .*Error.*	.*:.*:.*	[RuleX]	CHANNEL1
 ```
 
-1. include message (can use regex.)
-2. date range (can use regex.)
-3. post message used this to header. (you use to analyze label.)
-4. channel label. If detect rule, post message to channel.
+1. strings define (can use regex.) note: The meaning of the string to be included.
+2. Date and time range (can use regex.)
+3. Give this label to messages that match the rule. (you use to analyze messages.)
+4. channel label. If detect rule, post message to channel defined.
 
 note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".
-  If you detect message include "Fault" and every day at 10:00-12:00, rule is
+  If you want to detect message include "Fault" and every day at 10:00-12:00, rule is
   ```
   .*Fault.* .*/.*/.* 1[0-2]:.*:.* .*
   ```
 
-note) not only single but can write plural rules by tsv.
+note) not only single define but can write plural rules.
 
 ## [Incidents]
 
@@ -165,29 +165,28 @@ This config for incidents managed channel.
 CHANNEL1	C025FKF3QJV	20
 ```
 
-1. channel label
-2. channnel id for Incidents
-3. Number of message to go back
+1. label for channel.
+2. channnel id for Incident manage.
+3. Number of message to go back reference.
 
-note) 4. is too big, check more slowly..<br>
-
-note) not only single but can write plural rules by tsv.
+note) 3. is too big, check more slowly..<br>
+note) not only single define but can write plural rules.
 
 ### Special Definition
 
-In the case of -reverse mode, it defines the default incident registration destination when all the rules are not met.
+In the case of -reverse mode, it defines the default incident registration destination when all the rules are not match.
 
 ```
 DEFAULT	C025FKF3QJV	[Alert]
 ```
 
 1. "DEFAULT" is static define.
-2. channnel id for Incidents.
-3. post message used this to header. (you use to analyze label.)
+2. channnel id for Incident manage.
+3. message is use this header.
 
 ## [Label]
 
-Define which reactions are marked as supported.
+Define which reactions are marked as resolved.
 
 note) [This page is a good reference for what marks can be used.](https://qiita.com/yamadashy/items/ae673f2bae8f1525b6af)
 
@@ -232,7 +231,7 @@ C0256BTKP54
 
 ## -config
 
-Specify the configuration file.
+Specify the configuration file name.
 
 ## -debug
 
@@ -248,9 +247,9 @@ Interval between incidents checks (in Hours). Default is 24 Hour.
 
 ## -onlyReport
 
-If this option is specified, the tool will exit after the incidents check.
+If this option is specified, the tool will exit after the incidents report.<br>
 
-note) This can be used if you want to move the incident manually.
+note) This can be used if you want to check the incident report manually.
 
 ## -reverse
 
@@ -264,8 +263,9 @@ It will be reversed as follows
 
 ## -test
 
-Give a message to check the rule and exit the tool.
-
+If this option is specified, the tool will exit after the message check.<br>
+This can be used if you want to check the message check manually.
+ 
 ```
 >IMS -test="Error test"
 
@@ -273,11 +273,11 @@ Give a message to check the rule and exit the tool.
 this message include rule (1)!
 ```
 
-note) The number in parentheses () indicates the number of rules that have been matched.
+note) The number in parentheses () indicates the order of rules that have been matched.
 
 ## -verbose
 
-Displays not only unsupported messages, but also supported ones.
+Displays not only unsolved messages, but also solved ones.
 
 ```
 [message] norml message [date] 2021/05/02 21:27:28
@@ -292,7 +292,7 @@ OK [message] error and reactioned [date] 2021/05/02 21:25:40 [user]  yasutakato
 NG [message] test message [date] 2021/05/02 17:54:05
 ```
 
-note) In this mode, the name of the person who responded will also be displayed.
+note) In this mode, the name of the person who resolve will also be displayed.
 
 # license
 
