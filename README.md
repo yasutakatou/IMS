@@ -190,6 +190,11 @@ Define which reactions are marked as resolved.
 
 note) [This page is a good reference for what marks can be used.](https://qiita.com/yamadashy/items/ae673f2bae8f1525b6af)
 
+## [Report]
+
+Define the channel for report output.<br>
+The default cycle is once a day, but you can change it with option -loop.
+
 ## example
 
 ```
