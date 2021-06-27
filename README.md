@@ -1,17 +1,18 @@
 # IMS
 
-Incident management tool with slack.
+**Incident management tool with slack**.
 
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
-But hasn't it changed that people are reading the all messages and making decisions and responses?
+But hasn't it changed that people are reading the **all messages and making decisions and responses**?
 Let's change that!
 This tool enables easy incident management through chat, accelerating ChatOps!!
 
 # Feature
 
-This tool has three major functions.
+This tool has three major functions.<br>
+
 1. check the posted messages according to the rules, label them if they fit the rules, and repost them to the incidents management channel.
 
 ![2](https://user-images.githubusercontent.com/22161385/117542584-2f2aaf00-b054-11eb-8405-570a21570f9c.png)
@@ -33,9 +34,9 @@ In other words, you can use the following
 
 This makes it possible to
 
-1. Identify unanswered alerts
-2. Filter for known messages
-3. Your team can keep a history of responses to alerts.
+1. **Identify unanswered alerts**
+2. **Filter for known messages**
+3. **Your team can keep a history of responses to alerts.**
 
 All this can be done on slack!
 
@@ -128,11 +129,11 @@ note) Bot have them participate in all the channels where you want to collect in
 
 # config file
 
-Configs format is tab split values. The definition is ignore if you put sharp(#) at the beginning.
+Configs format is **tab split values**. The definition is ignore if you put sharp(#) at the beginning.
 
 ## auto read suppot
 
-config file supported auto read. so, you rewrite config file, tool not necessaly rerun, tool just this.
+config file supported **auto read. so**, you rewrite config file, **tool not necessaly rerun, tool just this**.
 
 ## [Rules]
 
@@ -148,13 +149,13 @@ Define rules for detecting messages.
 3. Give this label to messages that match the rule. (you use to analyze messages.)
 4. channel label. If detect rule, post message to channel defined.
 
-note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".
-  If you want to detect message include "Fault" and every day at 10:00-12:00, rule is
+note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".<br>
+  If you want to detect message include "Fault" and every day at 10:00-12:00, rule is<br>
   ```
   .*Fault.* .*/.*/.* 1[0-2]:.*:.* .*
   ```
 
-note) not only single define but can write plural rules.
+note) **not only single define but can write plural rules**.
 
 ## [Incidents]
 
@@ -170,30 +171,30 @@ CHANNEL1	C025FKF3QJV	20
 3. Number of message to go back reference.
 
 note) 3. is too big, check more slowly..<br>
-note) not only single define but can write plural rules.
+note) **not only single define but can write plural rules**.
 
 ### Special Definition
 
-In the case of -reverse mode, it defines the default incident registration destination when all the rules are not match.
+In the case of **-reverse mode**, it defines the **default incident registration destination** when all the rules are not match.
 
 ```
 DEFAULT	C025FKF3QJV	[Alert]
 ```
 
-1. "DEFAULT" is static define.
+1. **"DEFAULT"** is static define.
 2. channnel id for Incident manage.
 3. message is use this header.
 
 ## [Label]
 
-Define which reactions are marked as resolved.
+Define which reactions are **marked as resolved**.
 
 note) [This page is a good reference for what marks can be used.](https://qiita.com/yamadashy/items/ae673f2bae8f1525b6af)
 
 ## [Report]
 
-Define the channel for report output.<br>
-The default cycle is once a day, but you can change it with option -loop.
+Define the channel for **report output**.<br>
+The default **cycle is once a day**, but you can change it with option -loop.
 
 ## example
 
@@ -234,6 +235,8 @@ C0256BTKP54
 
 ## -auto
 
+config auto read/write mode.
+
 ## -config
 
 Specify the configuration file name.
@@ -248,7 +251,7 @@ Specify the log file name.
 
 ## -loop
 
-Interval between incidents checks (in Hours). Default is 24 Hour.
+Interval between incidents checks (in Hours). **Default is 24 Hour**.
 
 ## -onlyReport
 
@@ -258,7 +261,7 @@ note) This can be used if you want to check the incident report manually.
 
 ## -reverse
 
-all check rules to reverse
+**all check rules to reverse**
 
 ![1](https://user-images.githubusercontent.com/22161385/122678154-75148e80-d220-11eb-9c71-873538f8b5ed.png)
 
@@ -278,7 +281,7 @@ This can be used if you want to check the message check manually.
 this message include rule (1)!
 ```
 
-note) The number in parentheses () indicates the order of rules that have been matched.
+note) The number in parentheses () indicates **the order of rules that have been matched**.
 
 ## -verbose
 
@@ -297,7 +300,7 @@ OK [message] error and reactioned [date] 2021/05/02 21:25:40 [user]  yasutakato
 NG [message] test message [date] 2021/05/02 17:54:05
 ```
 
-note) In this mode, the name of the person who resolve will also be displayed.
+note) In this mode, **the name of the person who resolve will also be displayed**.
 
 # license
 
