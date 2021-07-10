@@ -2,7 +2,7 @@
 
 **Incident management tool with slack**.
 
-### v0.3
+### v0.2
 
 - add hotline mode
 	-  Mention a specific message to make it an incident.
