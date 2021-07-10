@@ -2,6 +2,13 @@
 
 **Incident management tool with slack**.
 
+### v0.3
+
+- add hotline mode
+	-  Mention a specific message to make it an incident.
+- add check target id
+	- You can specify the ID to check for messages.
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -141,13 +148,14 @@ Define rules for detecting messages.
 
 ```
 [Rules]
-.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1
+.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1	Hot1
 ```
 
 1. strings define (can use regex.) note: The meaning of the string to be included.
 2. Date and time range (can use regex.)
 3. Give this label to messages that match the rule. (you use to analyze messages.)
 4. channel label. If detect rule, post message to channel defined.
+5. Mention it and make it an incident. Define the name of the **[Hotline] label**.
 
 note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".<br>
   If you want to detect message include "Fault" and every day at 10:00-12:00, rule is<br>
@@ -196,11 +204,35 @@ note) [This page is a good reference for what marks can be used.](https://qiita.
 Define the channel for **report output**.<br>
 The default **cycle is once a day**, but you can change it with option -loop.
 
+## [PostID]
+
+Messages from the ID defined here will be **checked**.
+
+note) **not only single define but can write plural IDs**.
+note) You can also specify the ID of the **bot**.
+
+![image](https://user-images.githubusercontent.com/22161385/125152354-fe1b4780-e186-11eb-9cd0-8f33940ce16a.png)
+
+## [Hotline]
+
+Defines the destination for mailed incidents.
+
+```
+Hot1	U024ZT3BHU5	here
+```
+
+1. label for define.
+2-. mention ids
+
+note) **not only single define but can write plural rules**.
+note) Slack user ID or **here, channnel, everyone** can be defined.
+
 ## example
 
 ```
 [Rules]
-.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1
+.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1	Hot1
+.*Warn.*	.*:.*:.*	[RuleX]	CHANNEL1	No
 [Incidents]
 CHANNEL1	C025FKF3QJV	20
 DEFAULT	C025FKF3QJV	[Alert]
@@ -208,6 +240,10 @@ DEFAULT	C025FKF3QJV	[Alert]
 white_check_mark
 [Report]
 C0256BTKP54
+[PostID]
+U024ZT3BHU5
+[Hotline]
+Hot1	U024ZT3BHU5	here
 ```
 
 # options
@@ -268,6 +304,8 @@ note) This can be used if you want to check the incident report manually.
 It will be reversed as follows
 
 ![2](https://user-images.githubusercontent.com/22161385/122678156-7776e880-d220-11eb-8fbe-d7e86222baca.png)
+
+note) Rules in hotline mode will be made **incidental even if they are reversed**.
 
 ## -test
 
