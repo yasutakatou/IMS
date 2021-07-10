@@ -31,12 +31,18 @@ type ruleData struct {
 	EXCLUDE string
 	HEAD    string
 	LABEL   string
+	HOTLINE string
 }
 
 type incidentData struct {
 	LABEL    string
 	CHANNNEL string
 	LIMIT    int
+}
+
+type alertData struct {
+	LABEL string
+	USERS []string
 }
 
 var (
@@ -46,6 +52,8 @@ var (
 	report         string
 	incidents      []incidentData
 	rules          []ruleData
+	postids        []string
+	alerts         []alertData
 )
 
 func main() {
@@ -144,9 +152,9 @@ func main() {
 func testRule(message string, reverse bool) {
 	fmt.Println("[Test] " + message)
 
-	result := checkMessage(message, reverse)
+	result, ruleInt := checkMessage(message, reverse)
 	if result != 0 {
-		fmt.Printf("this message include rule (%d)!\n", result)
+		fmt.Printf("this message include rule (%d)!\n", ruleInt)
 	} else {
 		fmt.Println("this message exclude rules..")
 	}
@@ -261,11 +269,14 @@ func Exists(filename string) bool {
 
 func loadConfig(configFile string) {
 	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report"}
+	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline"}
 
 	rules = nil
 	incidents = nil
 	label = ""
+	report = ""
+	postids = nil
+	alerts = nil
 
 	cfg, err := ini.LoadSources(loadOptions, configFile)
 	if err != nil {
@@ -277,20 +288,27 @@ func loadConfig(configFile string) {
 	setStructs("Incidents", cfg.Section("Incidents").Body(), 1)
 	setStructs("Label", cfg.Section("Label").Body(), 2)
 	setStructs("Report", cfg.Section("Report").Body(), 3)
+	setStructs("PostID", cfg.Section("PostID").Body(), 4)
+	setStructs("Hotline", cfg.Section("Hotline").Body(), 5)
 }
 
 func setStructs(configType, datas string, flag int) {
 	debugLog(" -- " + configType + " --")
 
 	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
-		if len(v) > 0 && flag != 2 && flag != 3 {
+		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 {
 			if strings.Index(v, "\t") != -1 {
 				strs := strings.Split(v, "\t")
 
 				switch flag {
-				case 0:
-					if len(strs) == 4 {
-						rules = append(rules, ruleData{TARGET: strs[0], EXCLUDE: strs[1], HEAD: strs[2], LABEL: strs[3]})
+				case 5:
+					if len(strs) > 1 {
+						var strr []string
+
+						for i := 1; i < len(strs); i++ {
+							strr = append(strr, strs[i])
+						}
+						alerts = append(alerts, alertData{LABEL: strs[0], USERS: strr})
 						debugLog(v)
 					}
 				case 1:
@@ -305,6 +323,11 @@ func setStructs(configType, datas string, flag int) {
 							debugLog(v)
 						}
 					}
+				case 0:
+					if len(strs) == 5 {
+						rules = append(rules, ruleData{TARGET: strs[0], EXCLUDE: strs[1], HEAD: strs[2], LABEL: strs[3], HOTLINE: strs[4]})
+						debugLog(v)
+					}
 				}
 			}
 		} else if flag == 2 {
@@ -312,6 +335,9 @@ func setStructs(configType, datas string, flag int) {
 			debugLog(v)
 		} else if flag == 3 {
 			report = v
+			debugLog(v)
+		} else if flag == 4 {
+			postids = append(postids, v)
 			debugLog(v)
 		}
 	}
@@ -382,6 +408,13 @@ func ruleChecker(api *slack.Client, reverse bool) {
 					innerEvent := eventsAPIEvent.InnerEvent
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
+						postId := ""
+						if len(ev.BotID) > 0 {
+							postId = ev.BotID
+						} else {
+							postId = ev.User
+						}
+
 						mess := ev.Text
 
 						if len(mess) == 0 {
@@ -392,20 +425,32 @@ func ruleChecker(api *slack.Client, reverse bool) {
 							mess = string(actualAttachmentJson)
 						}
 
-						if len(mess) > 0 && mess != "null" {
-							debugLog("receive message: " + mess)
-							result := checkMessage(mess, reverse)
-							if reverse == true {
-								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
-									postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
-								} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
-									markReaction(api, ev.Channel, ev.TimeStamp)
+						if len(mess) > 0 && mess != "null" && checkID(postId) == true {
+							debugLog("User: " + postId + " receive message: " + mess)
+							result, ruleInt := checkMessage(mess, reverse)
+
+							fmt.Println(result)
+							if result != 0 {
+								fmt.Println(checkHotline(result))
+							}
+
+							if result != 0 && checkHotline(ruleInt) == true {
+								if channelMatch(ev.Channel) == false {
+									postMessage(api, result-1, mess+"\n [Hotline Alert!] "+alertUsers())
 								}
 							} else {
-								if result != 0 && channelMatch(ev.Channel) == false {
-									postMessage(api, result-1, mess)
-								} else if channelMatch(ev.Channel) == false {
-									markReaction(api, ev.Channel, ev.TimeStamp)
+								if reverse == true {
+									if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
+										postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
+									} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
+										markReaction(api, ev.Channel, ev.TimeStamp)
+									}
+								} else {
+									if result != 0 && channelMatch(ev.Channel) == false {
+										postMessage(api, result-1, mess)
+									} else if channelMatch(ev.Channel) == false {
+										markReaction(api, ev.Channel, ev.TimeStamp)
+									}
 								}
 							}
 						}
@@ -417,6 +462,43 @@ func ruleChecker(api *slack.Client, reverse bool) {
 	}()
 
 	go client.Run()
+}
+
+func alertUsers() string {
+	strs := ""
+	for i := 0; i < len(alerts); i++ {
+		for r := 0; r < len(alerts[i].USERS); r++ {
+			switch alerts[i].USERS[r] {
+			case "here":
+				strs = strs + " <!here>"
+			case "channel":
+				strs = strs + " <!channnel>"
+			case "everyone":
+				strs = strs + " <!everyone>"
+			default:
+				strs = strs + " <@" + alerts[i].USERS[r] + ">"
+			}
+		}
+	}
+	return strs
+}
+
+func checkHotline(ruleInt int) bool {
+	for i := 0; i < len(alerts); i++ {
+		if alerts[i].LABEL == rules[ruleInt].HOTLINE {
+			return true
+		}
+	}
+	return false
+}
+
+func checkID(ID string) bool {
+	for i := 0; i < len(postids); i++ {
+		if postids[i] == ID {
+			return true
+		}
+	}
+	return false
 }
 
 func channelMatch(channel string) bool {
@@ -437,7 +519,7 @@ func markReaction(api *slack.Client, channnel, ts string) {
 	}
 }
 
-func checkMessage(message string, reverse bool) int {
+func checkMessage(message string, reverse bool) (int, int) {
 	wdays := [...]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
 
 	const layout = "2006/01/02 15:04:05"
@@ -457,12 +539,12 @@ func checkMessage(message string, reverse bool) int {
 			if dateRegex.MatchString(nowDate) == true {
 				debugLog("dateRegex: ok")
 				if act := incidentCheck(rules[i].LABEL); act != 0 {
-					return act
+					return act, i
 				}
 			}
 		}
 	}
-	return 0
+	return 0, 0
 }
 
 func incidentCheck(incidentName string) int {
