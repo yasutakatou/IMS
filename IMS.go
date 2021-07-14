@@ -188,6 +188,10 @@ func incident(api *slack.Client, verbose bool) {
 			}
 
 			if len(mess) > 0 && mess != "null" {
+				hlen := strings.Index(mess, "[Hotline Alert!]")
+				if hlen != -1 {
+					mess = mess[:hlen]
+				}
 				name := checkReaction(api, message.Reactions)
 				if verbose == true {
 					if name == "" {
@@ -381,6 +385,7 @@ func postMessage(api *slack.Client, channelInt int, message string) {
 }
 
 func postMessageStr(api *slack.Client, channelStr, channelLabel string, message string) {
+	debugLog("POST channnel: " + channelStr + " label: " + channelLabel + " mess: " + message)
 	_, _, err := api.PostMessage(channelStr, slack.MsgOptionText(channelLabel+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
 		fmt.Printf("failed posting message: %v", err)
@@ -428,11 +433,6 @@ func ruleChecker(api *slack.Client, reverse bool) {
 						if len(mess) > 0 && mess != "null" && checkID(postId) == true {
 							debugLog("User: " + postId + " receive message: " + mess)
 							result, ruleInt := checkMessage(mess, reverse)
-
-							fmt.Println(result)
-							if result != 0 {
-								fmt.Println(checkHotline(result))
-							}
 
 							if result != 0 && checkHotline(ruleInt) == true {
 								if channelMatch(ev.Channel) == false {
