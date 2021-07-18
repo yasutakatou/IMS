@@ -66,18 +66,12 @@ func main() {
 	_test := flag.String("test", "", "[-test=Test what happens when you set the message.]")
 	_autoRW := flag.Bool("auto", true, "[-auto=config auto read/write mode (true is enable)]")
 	_reverse := flag.Bool("reverse", false, "[-reverse=check rule to reverse (true is enable)]")
+	_IDLookup := flag.Bool("idlookup", true, "[-idlookup=resolve to ID definition (true is enable)]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
-
-	if Exists(*_Config) == true {
-		loadConfig(*_Config)
-	} else {
-		fmt.Printf("Fail to read config file: %v\n", *_Config)
-		os.Exit(1)
-	}
 
 	if *_test != "" {
 		testRule(*_test, *_reverse)
@@ -111,6 +105,13 @@ func main() {
 		slack.OptionAppLevelToken(appToken),
 	)
 
+	if Exists(*_Config) == true {
+		loadConfig(api, *_Config, *_IDLookup)
+	} else {
+		fmt.Printf("Fail to read config file: %v\n", *_Config)
+		os.Exit(1)
+	}
+
 	if *_onlyReport == true {
 		incident(api, *_verbose)
 		os.Exit(0)
@@ -128,7 +129,7 @@ func main() {
 			for {
 				select {
 				case <-watcher.Events:
-					loadConfig(*_Config)
+					loadConfig(api, *_Config, *_IDLookup)
 				case <-watcher.Errors:
 					fmt.Println("ERROR", err)
 				}
@@ -271,7 +272,7 @@ func Exists(filename string) bool {
 	return err == nil
 }
 
-func loadConfig(configFile string) {
+func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	loadOptions := ini.LoadOptions{}
 	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline"}
 
@@ -288,15 +289,51 @@ func loadConfig(configFile string) {
 		os.Exit(1)
 	}
 
-	setStructs("Rules", cfg.Section("Rules").Body(), 0)
-	setStructs("Incidents", cfg.Section("Incidents").Body(), 1)
-	setStructs("Label", cfg.Section("Label").Body(), 2)
-	setStructs("Report", cfg.Section("Report").Body(), 3)
-	setStructs("PostID", cfg.Section("PostID").Body(), 4)
-	setStructs("Hotline", cfg.Section("Hotline").Body(), 5)
+	usersMap := map[string]string{}
+	channelsMap := map[string]string{}
+
+	if IDLookup == true {
+		users, err := api.GetUsers()
+		if err == nil {
+			for _, user := range users {
+				debugLog("UserIDs: " + user.ID + " " + user.Name)
+				usersMap[user.Name] = user.ID
+			}
+		}
+	}
+
+	var cursor string
+	for {
+		requestParam := &slack.GetConversationsParameters{
+			Types:           []string{"public_channel"},
+			Limit:           1000,
+			ExcludeArchived: false,
+		}
+		if cursor != "" {
+			requestParam.Cursor = cursor
+		}
+		var channels []slack.Channel
+		channels, cursor, err := api.GetConversations(requestParam)
+		if err == nil {
+			for _, channel := range channels {
+				debugLog("ChannelIDs: " + channel.ID + " " + channel.Name)
+				channelsMap[channel.Name] = channel.ID
+			}
+		}
+		if cursor == "" {
+			break
+		}
+	}
+
+	setStructs(IDLookup, usersMap, channelsMap, "Rules", cfg.Section("Rules").Body(), 0)
+	setStructs(IDLookup, usersMap, channelsMap, "Incidents", cfg.Section("Incidents").Body(), 1)
+	setStructs(IDLookup, usersMap, channelsMap, "Label", cfg.Section("Label").Body(), 2)
+	setStructs(IDLookup, usersMap, channelsMap, "Report", cfg.Section("Report").Body(), 3)
+	setStructs(IDLookup, usersMap, channelsMap, "PostID", cfg.Section("PostID").Body(), 4)
+	setStructs(IDLookup, usersMap, channelsMap, "Hotline", cfg.Section("Hotline").Body(), 5)
 }
 
-func setStructs(configType, datas string, flag int) {
+func setStructs(IDLookup bool, users, channels map[string]string, configType, datas string, flag int) {
 	debugLog(" -- " + configType + " --")
 
 	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
@@ -310,21 +347,20 @@ func setStructs(configType, datas string, flag int) {
 						var strr []string
 
 						for i := 1; i < len(strs); i++ {
-							strr = append(strr, strs[i])
+							strr = append(strr, setUserStr(IDLookup, users, strs[i]))
 						}
 						alerts = append(alerts, alertData{LABEL: strs[0], USERS: strr})
-						debugLog(v)
 					}
 				case 1:
 					if strs[0] == "DEFAULT" {
-						defaultChannel = append(defaultChannel, strs[1])
+						defaultChannel = append(defaultChannel, setChannelStr(IDLookup, channels, strs[1]))
 						defaultChannel = append(defaultChannel, strs[2])
-						debugLog("default channel: " + v)
+						debugLog("default channel: " + strs[0] + " " + setChannelStr(IDLookup, channels, strs[1]) + " " + strs[2])
 					} else if len(strs) == 3 {
 						convInt, err := strconv.Atoi(strs[2])
 						if err == nil {
-							incidents = append(incidents, incidentData{LABEL: strs[0], CHANNNEL: strs[1], LIMIT: convInt})
-							debugLog(v)
+							incidents = append(incidents, incidentData{LABEL: strs[0], CHANNNEL: setChannelStr(IDLookup, channels, strs[1]), LIMIT: convInt})
+							debugLog("add channel: " + strs[0] + " " + setChannelStr(IDLookup, channels, strs[1]) + " " + strs[2])
 						}
 					}
 				case 0:
@@ -338,13 +374,35 @@ func setStructs(configType, datas string, flag int) {
 			label = v
 			debugLog(v)
 		} else if flag == 3 {
-			report = v
-			debugLog(v)
+			report = setChannelStr(IDLookup, channels, v)
 		} else if flag == 4 {
-			postids = append(postids, v)
-			debugLog(v)
+			postids = append(postids, setUserStr(IDLookup, users, v))
 		}
 	}
+}
+
+func setChannelStr(IDLookup bool, channels map[string]string, key string) string {
+	if IDLookup == true {
+		us, ok := channels[key]
+		if ok == true {
+			debugLog("Resove Channels: " + key + " -> " + us)
+			return us
+		}
+	}
+	debugLog("No Resolv:" + key)
+	return key
+}
+
+func setUserStr(IDLookup bool, users map[string]string, key string) string {
+	if IDLookup == true {
+		us, ok := users[key]
+		if ok == true {
+			debugLog("Resove User: " + key + " -> " + us)
+			return us
+		}
+	}
+	debugLog("No Resolv:" + key)
+	return key
 }
 
 func debugLog(message string) {
@@ -378,6 +436,7 @@ func debugLog(message string) {
 }
 
 func postMessage(api *slack.Client, channelInt int, message string) {
+	debugLog("POST channnel: " + incidents[channelInt].CHANNNEL + " label: " + rules[channelInt].HEAD + " mess: " + message)
 	_, _, err := api.PostMessage(incidents[channelInt].CHANNNEL, slack.MsgOptionText(rules[channelInt].HEAD+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
 		fmt.Printf("failed posting message: %v", err)
@@ -436,7 +495,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 							if result != 0 && checkHotline(ruleInt) == true {
 								if channelMatch(ev.Channel) == false {
-									postMessage(api, result-1, mess+"\n [Hotline Alert!] "+alertUsers())
+									postMessage(api, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
 								}
 							} else {
 								if reverse == true {
@@ -447,7 +506,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 									}
 								} else {
 									if result != 0 && channelMatch(ev.Channel) == false {
-										postMessage(api, result-1, mess)
+										postMessage(api, ruleInt, mess)
 									} else if channelMatch(ev.Channel) == false {
 										markReaction(api, ev.Channel, ev.TimeStamp)
 									}
