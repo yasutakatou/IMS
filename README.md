@@ -9,6 +9,11 @@
 - add check target id
 	- You can specify the ID to check for messages.
 
+### v0.3
+
+- It can now be defined by name or channel name instead of ID.
+	- Pre) U024ZT3BHU5	After) adminuser
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -99,6 +104,11 @@ Please follow the steps below to set up your environment.
 		- files:write
 		- reactions:write
 		- users:read
+			- v0.3 If you want to use **-idlookup** mode, you also need to define the following
+				- channels:read
+				- groups:read
+				- im:read
+				- mpim:read
 	- Install to Workspace
 	- Bot User OAuth Token
 		- Make a note of the token that begins with xoxb-.
@@ -180,6 +190,7 @@ CHANNEL1	C025FKF3QJV	20
 
 note) 3. is too big, check more slowly..<br>
 note) **not only single define but can write plural rules**.
+note) v0.3: You can also specify a channel name instead of an ID.
 
 ### Special Definition
 
@@ -192,6 +203,7 @@ DEFAULT	C025FKF3QJV	[Alert]
 1. **"DEFAULT"** is static define.
 2. channnel id for Incident manage.
 3. message is use this header.
+note) v0.3: You can also specify a channel name instead of an ID.
 
 ## [Label]
 
@@ -204,12 +216,15 @@ note) [This page is a good reference for what marks can be used.](https://qiita.
 Define the channel for **report output**.<br>
 The default **cycle is once a day**, but you can change it with option -loop.
 
+note) v0.3: You can also specify a channel name instead of an ID.
+
 ## [PostID]
 
 Messages from the ID defined here will be **checked**.
 
 note) **not only single define but can write plural IDs**.
 note) You can also specify the ID of the **bot**.
+note) v0.3: You can also specify a user name instead of an ID.
 
 ![image](https://user-images.githubusercontent.com/22161385/125152354-fe1b4780-e186-11eb-9cd0-8f33940ce16a.png)
 
@@ -226,6 +241,7 @@ Hot1	U024ZT3BHU5	here
 
 note) **not only single define but can write plural rules**.
 note) Slack user ID or **here, channnel, everyone** can be defined.
+note) v0.3: You can also specify a user name instead of an ID.
 
 ## example
 
@@ -246,6 +262,28 @@ U024ZT3BHU5
 Hot1	U024ZT3BHU5	here
 ```
 
+### v0.3
+
+```
+[Rules]
+.*Error.*	.*:.*:.*	[RuleX]	CHANNEL1	Hot1
+.*Warn.*	.*:.*:.*	[RuleX]	CHANNEL1	No
+.*Info.*	.*:.*:.*	[RuleX]	CHANNEL1	No
+.*Debug.*	.*:.*:.*	[RuleX]	CHANNEL1	No
+[Incidents]
+CHANNEL1	incidents	20
+DEFAULT	incidents	[Alert]
+[Label]
+white_check_mark
+[Report]
+report
+[PostID]
+ims
+adminuser
+[Hotline]
+Hot1	adminuser	here
+```
+
 # options
 
 ```
@@ -255,6 +293,8 @@ Hot1	U024ZT3BHU5	here
         [-config=config file)] (default "IMS.ini")
   -debug
         [-debug=debug mode (true is enable)]
+  -idlookup
+        [-idlookup=resolve to ID definition (true is enable)] (default true)
   -log
         [-log=logging mode (true is enable)]
   -loop int
@@ -280,6 +320,10 @@ Specify the configuration file name.
 ## -debug
 
 Run in the mode that outputs various logs.
+
+## -idlookup
+
+When enabled, it converts channel names and user names into IDs.
 
 ## -log
 
