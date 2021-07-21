@@ -435,9 +435,9 @@ func debugLog(message string) {
 	fmt.Fprintln(file, message)
 }
 
-func postMessage(api *slack.Client, channelInt int, message string) {
-	debugLog("POST channnel: " + incidents[channelInt].CHANNNEL + " label: " + rules[channelInt].HEAD + " mess: " + message)
-	_, _, err := api.PostMessage(incidents[channelInt].CHANNNEL, slack.MsgOptionText(rules[channelInt].HEAD+" "+message, false), slack.MsgOptionAsUser(true))
+func postMessage(api *slack.Client, channelInt, ruleInt int, message string) {
+	debugLog("POST channnel: " + incidents[channelInt].CHANNNEL + " label: " + rules[ruleInt].HEAD + " mess: " + message)
+	_, _, err := api.PostMessage(incidents[channelInt].CHANNNEL, slack.MsgOptionText(rules[ruleInt].HEAD+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
 		fmt.Printf("failed posting message: %v", err)
 	}
@@ -495,7 +495,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 							if result != 0 && checkHotline(ruleInt) == true {
 								if channelMatch(ev.Channel) == false {
-									postMessage(api, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
+									postMessage(api, result-1, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
 								}
 							} else {
 								if reverse == true {
@@ -506,7 +506,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 									}
 								} else {
 									if result != 0 && channelMatch(ev.Channel) == false {
-										postMessage(api, ruleInt, mess)
+										postMessage(api, result-1, ruleInt, mess)
 									} else if channelMatch(ev.Channel) == false {
 										markReaction(api, ev.Channel, ev.TimeStamp)
 									}
