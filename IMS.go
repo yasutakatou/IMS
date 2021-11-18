@@ -46,14 +46,14 @@ type alertData struct {
 }
 
 var (
-	debug, logging bool
-	label          string
-	defaultChannel []string
-	report         string
-	incidents      []incidentData
-	rules          []ruleData
-	postids        []string
-	alerts         []alertData
+	debug, logging, reacji bool
+	label, reacjiLabel     string
+	defaultChannel         []string
+	report                 string
+	incidents              []incidentData
+	rules                  []ruleData
+	postids                []string
+	alerts                 []alertData
 )
 
 func main() {
@@ -67,11 +67,13 @@ func main() {
 	_autoRW := flag.Bool("auto", true, "[-auto=config auto read/write mode (true is enable)]")
 	_reverse := flag.Bool("reverse", false, "[-reverse=check rule to reverse (true is enable)]")
 	_IDLookup := flag.Bool("idlookup", true, "[-idlookup=resolve to ID definition (true is enable)]")
+	_reacji := flag.Bool("reacji", false, "[-reacji=Slack: reacji channeler mode (true is enable)]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
+	reacji = bool(*_reacji)
 
 	if *_test != "" {
 		testRule(*_test, *_reverse)
@@ -177,8 +179,11 @@ func incident(api *slack.Client, verbose bool) {
 			fmt.Printf("incident not get: %s\n", err)
 			return
 		}
-		for _, message := range messages.Messages {
+		for x, message := range messages.Messages {
 			mess := message.Text
+
+			fmt.Printf("message: %d\n", x)
+			fmt.Println(message)
 
 			if len(mess) == 0 {
 				actualAttachmentJson, err := json.Marshal(message.Attachments)
@@ -198,17 +203,17 @@ func incident(api *slack.Client, verbose bool) {
 					if name == "" {
 						stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
 						debugLog(stra)
-						ret = ret + stra + "\n"
+						ret = ret + stra + "\n\n"
 					} else {
 						stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
 						debugLog(stra)
-						ret = ret + stra + "\n"
+						ret = ret + stra + "\n\n"
 					}
 				} else {
 					if name == "" {
 						stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
 						debugLog(stra)
-						ret = ret + stra + "\n"
+						ret = ret + stra + "\n\n"
 					}
 				}
 			}
@@ -274,7 +279,7 @@ func Exists(filename string) bool {
 
 func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline"}
+	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji"}
 
 	rules = nil
 	incidents = nil
@@ -282,6 +287,7 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	report = ""
 	postids = nil
 	alerts = nil
+	reacjiLabel = ""
 
 	cfg, err := ini.LoadSources(loadOptions, configFile)
 	if err != nil {
@@ -331,6 +337,7 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	setStructs(IDLookup, usersMap, channelsMap, "Report", cfg.Section("Report").Body(), 3)
 	setStructs(IDLookup, usersMap, channelsMap, "PostID", cfg.Section("PostID").Body(), 4)
 	setStructs(IDLookup, usersMap, channelsMap, "Hotline", cfg.Section("Hotline").Body(), 5)
+	setStructs(IDLookup, usersMap, channelsMap, "Reacji", cfg.Section("Reacji").Body(), 6)
 }
 
 func setStructs(IDLookup bool, users, channels map[string]string, configType, datas string, flag int) {
@@ -377,6 +384,9 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 			report = setChannelStr(IDLookup, channels, v)
 		} else if flag == 4 {
 			postids = append(postids, setUserStr(IDLookup, users, v))
+		} else if flag == 6 {
+			reacjiLabel = v
+			debugLog(v)
 		}
 	}
 }
@@ -500,15 +510,23 @@ func ruleChecker(api *slack.Client, reverse bool) {
 							} else {
 								if reverse == true {
 									if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
-										postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
+										if reacji == true {
+											markReaction(api, ev.Channel, ev.TimeStamp, reacjiLabel)
+										} else {
+											postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
+										}
 									} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
-										markReaction(api, ev.Channel, ev.TimeStamp)
+										markReaction(api, ev.Channel, ev.TimeStamp, label)
 									}
 								} else {
 									if result != 0 && channelMatch(ev.Channel) == false {
-										postMessage(api, result-1, ruleInt, mess)
+										if reacji == true {
+											markReaction(api, ev.Channel, ev.TimeStamp, reacjiLabel)
+										} else {
+											postMessage(api, result-1, ruleInt, mess)
+										}
 									} else if channelMatch(ev.Channel) == false {
-										markReaction(api, ev.Channel, ev.TimeStamp)
+										markReaction(api, ev.Channel, ev.TimeStamp, label)
 									}
 								}
 							}
@@ -569,10 +587,10 @@ func channelMatch(channel string) bool {
 	return false
 }
 
-func markReaction(api *slack.Client, channnel, ts string) {
+func markReaction(api *slack.Client, channnel, ts string, markStr string) {
 	msgRef := slack.NewRefToMessage(channnel, ts)
 
-	if err := api.AddReaction(label, msgRef); err != nil {
+	if err := api.AddReaction(markStr, msgRef); err != nil {
 		fmt.Printf("Error adding reaction: %s\n", err)
 		return
 	}
