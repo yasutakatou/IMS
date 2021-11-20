@@ -47,7 +47,7 @@ type alertData struct {
 
 var (
 	debug, logging, reacji bool
-	label, reacjiLabel     string
+	label, reacjiStr       string
 	defaultChannel         []string
 	report                 string
 	incidents              []incidentData
@@ -180,47 +180,79 @@ func incident(api *slack.Client, verbose bool) {
 			return
 		}
 		for x, message := range messages.Messages {
-			mess := message.Text
+			if reacji == true && strings.Index(message.Text, "Hotline Alert") == -1 {
+				if x == 0 {
+					postMessageStr(api, report, "", dates)
+				}
 
-			fmt.Printf("message: %d\n", x)
-			fmt.Println(message)
-
-			if len(mess) == 0 {
 				actualAttachmentJson, err := json.Marshal(message.Attachments)
 				if err != nil {
 					fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
 				}
-				mess = string(actualAttachmentJson)
-			}
-
-			if len(mess) > 0 && mess != "null" {
-				hlen := strings.Index(mess, "[Hotline Alert!]")
-				if hlen != -1 {
-					mess = mess[:hlen]
-				}
+				mess := string(actualAttachmentJson)
+				result, _ := checkMessage(mess, false)
+				ruleInt := result - 1
 				name := checkReaction(api, message.Reactions)
-				if verbose == true {
+
+				if result > 0 && verbose == true {
 					if name == "" {
-						stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
+						stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
 						debugLog(stra)
 						ret = ret + stra + "\n\n"
 					} else {
-						stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+						stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
 						debugLog(stra)
 						ret = ret + stra + "\n\n"
 					}
 				} else {
 					if name == "" {
-						stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
+						stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
 						debugLog(stra)
 						ret = ret + stra + "\n\n"
 					}
 				}
+				postMessageStr(api, report, rules[ruleInt].HEAD, ret)
+			} else {
+				mess := message.Text
+
+				if len(mess) == 0 {
+					actualAttachmentJson, err := json.Marshal(message.Attachments)
+					if err != nil {
+						fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
+					}
+					mess = string(actualAttachmentJson)
+				}
+
+				if len(mess) > 0 && mess != "null" {
+					hlen := strings.Index(mess, "[Hotline Alert!]")
+					if hlen != -1 {
+						mess = mess[:hlen]
+					}
+					name := checkReaction(api, message.Reactions)
+
+					if verbose == true {
+						if name == "" {
+							stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
+							debugLog(stra)
+							ret = ret + stra + "\n\n"
+						} else {
+							stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+							debugLog(stra)
+							ret = ret + stra + "\n\n"
+						}
+					} else {
+						if name == "" {
+							stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
+							debugLog(stra)
+							ret = ret + stra + "\n\n"
+						}
+					}
+				}
+				postTextFile(api, ret, report, dates)
 			}
 		}
 	}
 
-	postTextFile(api, ret, report, dates)
 }
 
 func postTextFile(api *slack.Client, strs, repChan, dates string) {
@@ -287,7 +319,6 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	report = ""
 	postids = nil
 	alerts = nil
-	reacjiLabel = ""
 
 	cfg, err := ini.LoadSources(loadOptions, configFile)
 	if err != nil {
@@ -344,7 +375,7 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 	debugLog(" -- " + configType + " --")
 
 	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
-		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 {
+		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 && flag != 6 {
 			if strings.Index(v, "\t") != -1 {
 				strs := strings.Split(v, "\t")
 
@@ -382,10 +413,12 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 			debugLog(v)
 		} else if flag == 3 {
 			report = setChannelStr(IDLookup, channels, v)
+			debugLog(v)
 		} else if flag == 4 {
 			postids = append(postids, setUserStr(IDLookup, users, v))
+			debugLog(v)
 		} else if flag == 6 {
-			reacjiLabel = v
+			reacjiStr = v
 			debugLog(v)
 		}
 	}
@@ -478,7 +511,10 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 					continue
 				}
+				fmt.Printf("evt: ")
+				fmt.Println(evt)
 				if eventsAPIEvent.Type == slackevents.CallbackEvent {
+					fmt.Printf("evt!")
 					innerEvent := eventsAPIEvent.InnerEvent
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
@@ -505,13 +541,18 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 							if result != 0 && checkHotline(ruleInt) == true {
 								if channelMatch(ev.Channel) == false {
-									postMessage(api, result-1, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
+									if reacji == true {
+										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+										postMessage(api, result-1, ruleInt, "[Hotline Alert!] "+alertUsers())
+									} else {
+										postMessage(api, result-1, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
+									}
 								}
 							} else {
 								if reverse == true {
 									if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
 										if reacji == true {
-											markReaction(api, ev.Channel, ev.TimeStamp, reacjiLabel)
+											markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
 										} else {
 											postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
 										}
@@ -521,7 +562,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 								} else {
 									if result != 0 && channelMatch(ev.Channel) == false {
 										if reacji == true {
-											markReaction(api, ev.Channel, ev.TimeStamp, reacjiLabel)
+											markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
 										} else {
 											postMessage(api, result-1, ruleInt, mess)
 										}
@@ -566,6 +607,7 @@ func checkHotline(ruleInt int) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
