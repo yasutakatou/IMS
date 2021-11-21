@@ -155,7 +155,7 @@ Define a forwarding reaction for the channel that **collects the incidents**.
 
 If the rule is met, it will be automatically **marked and forwarded**.
 
-![3](https://user-images.githubusercontent.com/22161385/142754729-4aa99751-d11b-4d94-b0f8-248c9aa3033a.png)
+![3](https://user-images.githubusercontent.com/22161385/142754729-4aa99751-d11b-4d94-b0f8-248c9aa3033a.png)<br>
 ![4](https://user-images.githubusercontent.com/22161385/142754749-20ea0ba9-daa4-4fa2-b3bd-1c2f4841f75d.png)
 
 **Reports with links** will go up on the channel for reporting.
@@ -164,9 +164,9 @@ If the rule is met, it will be automatically **marked and forwarded**.
 
 The mode of **-reverse** is also supported
 
-![image](https://user-images.githubusercontent.com/22161385/142754781-b8eb6394-46be-4ca8-ac3f-cd1837d60e73.png)
-![image](https://user-images.githubusercontent.com/22161385/142754787-068bc919-d9a0-41e8-9bcb-0f4ca0723563.png)
-![image](https://user-images.githubusercontent.com/22161385/142754790-49a72621-0f04-4a1d-a1be-7f2ba55ac850.png)
+![image](https://user-images.githubusercontent.com/22161385/142754781-b8eb6394-46be-4ca8-ac3f-cd1837d60e73.png)<br>
+![image](https://user-images.githubusercontent.com/22161385/142754787-068bc919-d9a0-41e8-9bcb-0f4ca0723563.png)<br>
+![image](https://user-images.githubusercontent.com/22161385/142754790-49a72621-0f04-4a1d-a1be-7f2ba55ac850.png)<br>
 
 note) If you are in mode A, **you will not be able to add tags** to your report.
 
