@@ -115,7 +115,7 @@ func main() {
 	}
 
 	if *_onlyReport == true {
-		incident(api, *_verbose)
+		incident(api, *_verbose, *_reverse)
 		os.Exit(0)
 	}
 
@@ -146,16 +146,16 @@ func main() {
 	ruleChecker(api, *_reverse)
 
 	for {
-		incident(api, *_verbose)
+		incident(api, *_verbose, *_reverse)
 		time.Sleep(time.Hour * time.Duration(*_loop))
 	}
 	os.Exit(0)
 }
 
 func testRule(message string, reverse bool) {
-	fmt.Println("[Test] " + message)
+	debugLog("[Test] " + message)
 
-	result, ruleInt := checkMessage(message, reverse)
+	result, ruleInt := checkMessage(message)
 	if result != 0 {
 		fmt.Printf("this message include rule (%d)!\n", ruleInt)
 	} else {
@@ -163,7 +163,7 @@ func testRule(message string, reverse bool) {
 	}
 }
 
-func incident(api *slack.Client, verbose bool) {
+func incident(api *slack.Client, verbose, reverse bool) {
 	const layout = "2006/01/02 15:04:05"
 	t := time.Now()
 
@@ -180,38 +180,65 @@ func incident(api *slack.Client, verbose bool) {
 			return
 		}
 		for x, message := range messages.Messages {
-			if reacji == true && strings.Index(message.Text, "Hotline Alert") == -1 {
+			ret = ""
+			if reacji == true {
 				if x == 0 {
 					postMessageStr(api, report, "", dates)
 				}
 
-				actualAttachmentJson, err := json.Marshal(message.Attachments)
-				if err != nil {
-					fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
-				}
-				mess := string(actualAttachmentJson)
-				result, _ := checkMessage(mess, false)
-				ruleInt := result - 1
-				name := checkReaction(api, message.Reactions)
+				if reverse == true {
+					name := checkReaction(api, message.Reactions)
 
-				if result > 0 && verbose == true {
-					if name == "" {
-						stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
-						debugLog(stra)
-						ret = ret + stra + "\n\n"
-					} else {
-						stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
-						debugLog(stra)
-						ret = ret + stra + "\n\n"
+					if strings.Index(message.Text, "Hotline Alert") == -1 {
+						if verbose == true {
+							if name == "" {
+								stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+								debugLog(stra)
+								ret = ret + stra + "\n\n"
+							} else {
+								stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+								debugLog(stra)
+								ret = ret + stra + "\n\n"
+							}
+						} else {
+							if name == "" {
+								stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+								debugLog(stra)
+								ret = ret + stra + "\n\n"
+							}
+						}
+						postMessageStr(api, report, "", ret)
 					}
 				} else {
-					if name == "" {
-						stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
-						debugLog(stra)
-						ret = ret + stra + "\n\n"
+					actualAttachmentJson, err := json.Marshal(message.Attachments)
+					if err != nil {
+						fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
+					}
+					mess := string(actualAttachmentJson)
+					result, ruleInt := checkMessage(mess)
+					name := checkReaction(api, message.Reactions)
+
+					if result > 0 && strings.Index(message.Text, "Hotline Alert") == -1 {
+						if verbose == true {
+							if name == "" {
+								stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+								debugLog(stra)
+								ret = ret + stra + "\n\n"
+							} else {
+								stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+								debugLog(stra)
+								ret = ret + stra + "\n\n"
+							}
+						} else {
+							if name == "" {
+								stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+								debugLog(stra)
+								ret = ret + stra + "\n\n"
+							}
+						}
+						postMessageStr(api, report, rules[ruleInt].HEAD, ret)
 					}
 				}
-				postMessageStr(api, report, rules[ruleInt].HEAD, ret)
 			} else {
 				mess := message.Text
 
@@ -479,6 +506,9 @@ func debugLog(message string) {
 }
 
 func postMessage(api *slack.Client, channelInt, ruleInt int, message string) {
+	if len(message) < 5 {
+		return
+	}
 	debugLog("POST channnel: " + incidents[channelInt].CHANNNEL + " label: " + rules[ruleInt].HEAD + " mess: " + message)
 	_, _, err := api.PostMessage(incidents[channelInt].CHANNNEL, slack.MsgOptionText(rules[ruleInt].HEAD+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
@@ -487,6 +517,9 @@ func postMessage(api *slack.Client, channelInt, ruleInt int, message string) {
 }
 
 func postMessageStr(api *slack.Client, channelStr, channelLabel string, message string) {
+	if len(message) < 5 {
+		return
+	}
 	debugLog("POST channnel: " + channelStr + " label: " + channelLabel + " mess: " + message)
 	_, _, err := api.PostMessage(channelStr, slack.MsgOptionText(channelLabel+" "+message, false), slack.MsgOptionAsUser(true))
 	if err != nil {
@@ -511,8 +544,6 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 					continue
 				}
-				fmt.Printf("evt: ")
-				fmt.Println(evt)
 				if eventsAPIEvent.Type == slackevents.CallbackEvent {
 					fmt.Printf("evt!")
 					innerEvent := eventsAPIEvent.InnerEvent
@@ -537,41 +568,41 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 						if len(mess) > 0 && mess != "null" && checkID(postId) == true {
 							debugLog("User: " + postId + " receive message: " + mess)
-							result, ruleInt := checkMessage(mess, reverse)
+							result, ruleInt := checkMessage(mess)
 
-							if result != 0 && checkHotline(ruleInt) == true {
-								if channelMatch(ev.Channel) == false {
+							if reverse == true {
+								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
 									if reacji == true {
 										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
-										postMessage(api, result-1, ruleInt, "[Hotline Alert!] "+alertUsers())
 									} else {
-										postMessage(api, result-1, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
+										postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
 									}
+								} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
+									markReaction(api, ev.Channel, ev.TimeStamp, label)
 								}
 							} else {
-								if reverse == true {
-									if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
-										if reacji == true {
-											markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
-										} else {
-											postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
-										}
-									} else if ev.Channel != report && ev.Channel != defaultChannel[0] {
-										markReaction(api, ev.Channel, ev.TimeStamp, label)
+								if result != 0 && channelMatch(ev.Channel) == false {
+									if reacji == true {
+										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+									} else {
+										postMessage(api, result-1, ruleInt, mess)
 									}
-								} else {
-									if result != 0 && channelMatch(ev.Channel) == false {
-										if reacji == true {
-											markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
-										} else {
-											postMessage(api, result-1, ruleInt, mess)
+									if checkHotline(ruleInt) == true {
+										if channelMatch(ev.Channel) == false {
+											if reacji == true {
+												markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+												postMessage(api, result-1, ruleInt, "[Hotline Alert!] "+alertUsers())
+											} else {
+												postMessage(api, result-1, ruleInt, mess+"\n [Hotline Alert!] "+alertUsers())
+											}
 										}
-									} else if channelMatch(ev.Channel) == false {
-										markReaction(api, ev.Channel, ev.TimeStamp, label)
 									}
+								} else if channelMatch(ev.Channel) == false {
+									markReaction(api, ev.Channel, ev.TimeStamp, label)
 								}
 							}
 						}
+
 					}
 				}
 				client.Ack(*evt.Request)
@@ -638,12 +669,14 @@ func markReaction(api *slack.Client, channnel, ts string, markStr string) {
 	}
 }
 
-func checkMessage(message string, reverse bool) (int, int) {
+func checkMessage(message string) (int, int) {
 	wdays := [...]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
 
 	const layout = "2006/01/02 15:04:05"
 	t := time.Now()
 	nowDate := t.Format(layout) + " " + wdays[t.Weekday()]
+
+	debugLog("messag: " + message)
 
 	for i := 0; i < len(rules); i++ {
 		debugLog("messageRegex: " + rules[i].TARGET)
