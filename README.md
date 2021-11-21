@@ -14,12 +14,17 @@
 - It can now be defined by name or channel name instead of ID.
 	- Pre) U024ZT3BHU5	After) adminuser
 
+### v0.4
+
+- add Reacji Channeler mode.
+	- Added support for visualized messages using **Reacji Channeler**.
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
-But hasn't it changed that people are reading the **all messages and making decisions and responses**?
-Let's change that!
-This tool enables easy incident management through chat, accelerating ChatOps!!
+But hasn't it changed that people are reading the **all messages and making decisions and responses**?<br>
+Let's change that!<br>
+This tool enables easy incident management through chat, accelerating ChatOps!!<br>
 
 # Feature
 
@@ -173,7 +178,7 @@ note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".<br>
   .*Fault.* .*/.*/.* 1[0-2]:.*:.* .*
   ```
 
-note) **not only single define but can write plural rules**.
+note) **not only single define but can write plural rules**.<br>
 
 ## [Incidents]
 
@@ -189,8 +194,8 @@ CHANNEL1	C025FKF3QJV	20
 3. Number of message to go back reference.
 
 note) 3. is too big, check more slowly..<br>
-note) **not only single define but can write plural rules**.
-note) v0.3: You can also specify a channel name instead of an ID.
+note) **not only single define but can write plural rules**.<br>
+note) v0.3: You can also specify a channel name instead of an ID.<br>
 
 ### Special Definition
 
@@ -203,34 +208,35 @@ DEFAULT	C025FKF3QJV	[Alert]
 1. **"DEFAULT"** is static define.
 2. channnel id for Incident manage.
 3. message is use this header.
-note) v0.3: You can also specify a channel name instead of an ID.
+
+note) v0.3: You can also specify a channel name instead of an ID.<br>
 
 ## [Label]
 
-Define which reactions are **marked as resolved**.
-
+Define which reactions are **marked as resolved**.<br>
+<br>
 note) [This page is a good reference for what marks can be used.](https://qiita.com/yamadashy/items/ae673f2bae8f1525b6af)
 
 ## [Report]
 
 Define the channel for **report output**.<br>
-The default **cycle is once a day**, but you can change it with option -loop.
+The default **cycle is once a day**, but you can change it with option -loop.<br>
 
-note) v0.3: You can also specify a channel name instead of an ID.
+note) v0.3: You can also specify a channel name instead of an ID.<br>
 
 ## [PostID]
 
 Messages from the ID defined here will be **checked**.
 
-note) **not only single define but can write plural IDs**.
-note) You can also specify the ID of the **bot**.
-note) v0.3: You can also specify a user name instead of an ID.
+note) **not only single define but can write plural IDs**.<br>
+note) You can also specify the ID of the **bot**.<br>
+note) v0.3: You can also specify a user name instead of an ID.<br>
 
 ![image](https://user-images.githubusercontent.com/22161385/125152354-fe1b4780-e186-11eb-9cd0-8f33940ce16a.png)
 
 ## [Hotline]
 
-Defines the destination for mailed incidents.
+Defines the destination for mailed incidents.<br>
 
 ```
 Hot1	U024ZT3BHU5	here
@@ -239,9 +245,20 @@ Hot1	U024ZT3BHU5	here
 1. label for define.
 2-. mention ids
 
-note) **not only single define but can write plural rules**.
-note) Slack user ID or **here, channnel, everyone** can be defined.
-note) v0.3: You can also specify a user name instead of an ID.
+note) **not only single define but can write plural rules**.<br>
+note) Slack user ID or **here, channnel, everyone** can be defined.<br>
+note) v0.3: You can also specify a user name instead of an ID.<br>
+
+## [Reacji]
+
+Define which reactions for **Reacji Channeler**.<br>
+Forward the incident to the channel that collects it with this definition.<br>
+<br>
+note) [This page is a good reference for what marks can be used.](https://qiita.com/yamadashy/items/ae673f2bae8f1525b6af)
+
+```
+warning
+```
 
 ## example
 
@@ -284,6 +301,30 @@ adminuser
 Hot1	adminuser	here
 ```
 
+### v0.4
+
+```
+[Rules]
+.*Error.*	.*:.*:.*	[Error]	CHANNEL1	Hot1
+.*Warn.*	.*:.*:.*	[Warn]	CHANNEL1	No
+.*Info.*	.*:.*:.*	[Info]	CHANNEL1	No
+.*Debug.*	.*:.*:.*	[Debug]	CHANNEL1	No
+[Incidents]
+CHANNEL1	incidents	20
+DEFAULT	incidents	[Alert]	
+[Label]
+white_check_mark
+[Report]
+rep
+[PostID]
+user
+adminuser
+[Hotline]
+Hot1	adminuser	here
+[Reacji]
+warning
+```
+
 # options
 
 ```
@@ -301,6 +342,8 @@ Hot1	adminuser	here
         [-loop=incident check loop time. ] (default 24)
   -onlyReport
         [-onlyReport=incident check and exit mode.]
+  -reacji
+        [-reacji=Slack: reacji channeler mode (true is enable)]
   -reverse
         [-reverse=check rule to reverse (true is enable)]
   -test string
@@ -337,7 +380,12 @@ Interval between incidents checks (in Hours). **Default is 24 Hour**.
 
 If this option is specified, the tool will exit after the incidents report.<br>
 
-note) This can be used if you want to check the incident report manually.
+note) This can be used if you want to check the incident report manually.<br>
+note) If you have enabled **Reacji Channeler**, then you should also specify **-reacji** when using this option.
+
+## -reacji
+
+Activate the mode that uses **Reacji Channeler**.
 
 ## -reverse
 
