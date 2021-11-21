@@ -142,6 +142,34 @@ note) Bot have them participate in all the channels where you want to collect in
 			- export SLACK_BOT_TOKEN=xoxb-...
 	- run this tool
 
+## v0.4) set up for Reacji Channeler
+
+about **Reacji Channeler**
+
+[Reacji Channeler](https://reacji-channeler.builtbyslack.com/)
+[Slack 用リアク字チャンネラー](https://slack.com/intl/ja-jp/help/articles/360000482666-Slack-%E7%94%A8%E3%83%AA%E3%82%A2%E3%82%AF%E5%AD%97%E3%83%81%E3%83%A3%E3%83%B3%E3%83%8D%E3%83%A9%E3%83%BC)
+
+Define a forwarding reaction for the channel that **collects the incidents**.
+
+![image](https://user-images.githubusercontent.com/22161385/142754689-e65a1b1e-5c2b-4505-8d48-1f933be7ddb9.png)
+
+If the rule is met, it will be automatically **marked and forwarded**.
+
+![3](https://user-images.githubusercontent.com/22161385/142754729-4aa99751-d11b-4d94-b0f8-248c9aa3033a.png)
+![4](https://user-images.githubusercontent.com/22161385/142754749-20ea0ba9-daa4-4fa2-b3bd-1c2f4841f75d.png)
+
+**Reports with links** will go up on the channel for reporting.
+
+![image](https://user-images.githubusercontent.com/22161385/142754760-225ed01a-00b1-48e0-b65d-3d38ff98b2d2.png)
+
+The mode of **-reverse** is also supported
+
+![image](https://user-images.githubusercontent.com/22161385/142754781-b8eb6394-46be-4ca8-ac3f-cd1837d60e73.png)
+![image](https://user-images.githubusercontent.com/22161385/142754787-068bc919-d9a0-41e8-9bcb-0f4ca0723563.png)
+![image](https://user-images.githubusercontent.com/22161385/142754790-49a72621-0f04-4a1d-a1be-7f2ba55ac850.png)
+
+note) If you are in mode A, **you will not be able to add tags** to your report.
+
 # usecase
 
 1. What alert messages will you respond to? Decide with your team what alert messages you will respond to, or ignore. -> config [Label]
