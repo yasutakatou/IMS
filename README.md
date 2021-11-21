@@ -146,7 +146,7 @@ note) Bot have them participate in all the channels where you want to collect in
 
 about **Reacji Channeler**
 
-[Reacji Channeler](https://reacji-channeler.builtbyslack.com/)
+[Reacji Channeler](https://reacji-channeler.builtbyslack.com/)<br>
 [Slack 用リアク字チャンネラー](https://slack.com/intl/ja-jp/help/articles/360000482666-Slack-%E7%94%A8%E3%83%AA%E3%82%A2%E3%82%AF%E5%AD%97%E3%83%81%E3%83%A3%E3%83%B3%E3%83%8D%E3%83%A9%E3%83%BC)
 
 Define a forwarding reaction for the channel that **collects the incidents**.
