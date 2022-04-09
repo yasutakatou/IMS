@@ -19,6 +19,12 @@
 - add Reacji Channeler mode.
 	- Added support for visualized messages using **Reacji Channeler**.
 
+### 20220409
+
+Add how to respond to **Private channel**.<br>
+<br>
+note) No change in code.<br>
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -131,6 +137,21 @@ Please follow the steps below to set up your environment.
 	- invite
 
 note) Bot have them participate in all the channels where you want to collect incidents.
+
+## 20220409 
+
+If you want to use **Private channnel**, add the following settings
+
+- OAuth & Permissions
+	- Scopes
+	- Bot Token Scopes
+		- **groups:history**
+	- Install to Workspace
+- Event Subscriptions
+	- Subscribe to bot events
+	- Add Bot User Event
+		- **message.groups**
+	- Save Changes
 
 3. your OS terminal
 	- set environment
