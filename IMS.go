@@ -545,7 +545,6 @@ func ruleChecker(api *slack.Client, reverse bool) {
 					continue
 				}
 				if eventsAPIEvent.Type == slackevents.CallbackEvent {
-					fmt.Printf("evt!")
 					innerEvent := eventsAPIEvent.InnerEvent
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
