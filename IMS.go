@@ -180,11 +180,12 @@ func incident(api *slack.Client, verbose, reverse bool) {
 			return
 		}
 		for x, message := range messages.Messages {
+			if x == 0 {
+				postMessageStr(api, report, "", dates)
+			}
+
 			ret = ""
-			if reacji == true {
-				if x == 0 {
-					postMessageStr(api, report, "", dates)
-				}
+			if strings.Index(message.Text, "<") != -1 && strings.Index(message.Text, ">") != -1 {
 
 				if reverse == true {
 					name := checkReaction(api, message.Reactions)
@@ -194,17 +195,17 @@ func incident(api *slack.Client, verbose, reverse bool) {
 							if name == "" {
 								stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
 								debugLog(stra)
-								ret = ret + stra + "\n\n"
+								ret = ret + stra + "\n"
 							} else {
 								stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
 								debugLog(stra)
-								ret = ret + stra + "\n\n"
+								ret = ret + stra + "\n"
 							}
 						} else {
 							if name == "" {
 								stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
 								debugLog(stra)
-								ret = ret + stra + "\n\n"
+								ret = ret + stra + "\n"
 							}
 						}
 						postMessageStr(api, report, "", ret)
@@ -223,17 +224,17 @@ func incident(api *slack.Client, verbose, reverse bool) {
 							if name == "" {
 								stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
 								debugLog(stra)
-								ret = ret + stra + "\n\n"
+								ret = ret + stra + "\n"
 							} else {
 								stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
 								debugLog(stra)
-								ret = ret + stra + "\n\n"
+								ret = ret + stra + "\n"
 							}
 						} else {
 							if name == "" {
 								stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
 								debugLog(stra)
-								ret = ret + stra + "\n\n"
+								ret = ret + stra + "\n"
 							}
 						}
 						postMessageStr(api, report, rules[ruleInt].HEAD, ret)
@@ -261,17 +262,17 @@ func incident(api *slack.Client, verbose, reverse bool) {
 						if name == "" {
 							stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
 							debugLog(stra)
-							ret = ret + stra + "\n\n"
+							ret = ret + stra + "\n"
 						} else {
 							stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
 							debugLog(stra)
-							ret = ret + stra + "\n\n"
+							ret = ret + stra + "\n"
 						}
 					} else {
 						if name == "" {
 							stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
 							debugLog(stra)
-							ret = ret + stra + "\n\n"
+							ret = ret + stra + "\n"
 						}
 					}
 				}
