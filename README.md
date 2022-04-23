@@ -25,6 +25,12 @@ Add how to respond to **Private channel**.<br>
 <br>
 note) No change in code.<br>
 
+### v0.5
+
+- I can now report mixed A messages.
+
+![image](https://user-images.githubusercontent.com/22161385/164874744-97e2027d-4554-4d2e-bc97-47eed8932f75.png)
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
