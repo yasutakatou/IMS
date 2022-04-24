@@ -31,6 +31,12 @@ note) No change in code.<br>
 
 ![image](https://user-images.githubusercontent.com/22161385/164874744-97e2027d-4554-4d2e-bc97-47eed8932f75.png)
 
+### v0.6
+
+- Added **reminder function** and ability to **delete remarks on reminder channels**.
+
+![image](https://user-images.githubusercontent.com/22161385/164969202-53e05b2a-631e-4e4d-b673-8ac2365cd1e8.png)
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -315,6 +321,21 @@ note) [This page is a good reference for what marks can be used.](https://qiita.
 warning
 ```
 
+## [Reminder]
+
+This function periodically **picks up unaddressed incidents** and notifies you of them.<br>
+Set the channel and time to be notified.<br>
+
+note) The first part is the channel name.<br>
+note) Specify the time you want to be notified in **tab-delimited** format using a **regular expression**.<br>
+
+```
+alert	.*1.*	.*2.*
+````
+
+note) In the above example, We'll keep you posted on Channel A from 10-24.<br>
+note) **not only single define but can write plural rules**.<br>
+
 ## example
 
 ```
@@ -380,11 +401,39 @@ Hot1	adminuser	here
 warning
 ```
 
+### 0.6
+
+```
+[Rules]
+.*Error.*	.*:.*:.*	[Error]	CHANNEL1	Hot1
+.*Warn.*	.*:.*:.*	[Warn]	CHANNEL1	No
+.*Info.*	.*:.*:.*	[Info]	CHANNEL1	No
+.*Debug.*	.*:.*:.*	[Debug]	CHANNEL1	No
+[Incidents]
+CHANNEL1	incidents	20
+DEFAULT	incidents	[Alert]	
+[Label]
+white_check_mark
+[Report]
+rep
+[PostID]
+user
+adminuser
+[Hotline]
+Hot1	adminuser	here
+[Reacji]
+warning
+[Reminder]
+alert	.*1.*	.*2.*
+```
+
 # options
 
 ```
   -auto
         [-auto=config auto read/write mode (true is enable)] (default true)
+  -clearReminder
+        [-clearReminder=clear reminder channel and exit mode.]
   -config string
         [-config=config file)] (default "IMS.ini")
   -debug
@@ -394,22 +443,28 @@ warning
   -log
         [-log=logging mode (true is enable)]
   -loop int
-        [-loop=incident check loop time. ] (default 24)
+        [-loop=incident check loop time (Hour). ] (default 24)
   -onlyReport
         [-onlyReport=incident check and exit mode.]
   -reacji
         [-reacji=Slack: reacji channeler mode (true is enable)]
+  -reminder int
+        [-reminder=Interval for posting reminders (Seconds). ] (default 30)
   -reverse
         [-reverse=check rule to reverse (true is enable)]
   -test string
         [-test=Test what happens when you set the message.]
   -verbose
-        [-verbose=check output verbose (true is enable)] (default true)
+        [-verbose=incident output verbose (true is enable)]
 ```
 
 ## -auto
 
 config auto read/write mode.
+
+## -clearReminder
+
+Turn off messages in the Reminders channel.
 
 ## -config
 
@@ -436,11 +491,16 @@ Interval between incidents checks (in Hours). **Default is 24 Hour**.
 If this option is specified, the tool will exit after the incidents report.<br>
 
 note) This can be used if you want to check the incident report manually.<br>
-note) If you have enabled **Reacji Channeler**, then you should also specify **-reacji** when using this option.
 
 ## -reacji
 
 Activate the mode that uses **Reacji Channeler**.
+
+## -reminder int
+
+The interval at which to check for reminders.
+
+note) Units are in **seconds**.<br>
 
 ## -reverse
 
