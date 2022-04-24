@@ -45,6 +45,11 @@ type alertData struct {
 	USERS []string
 }
 
+type reminderData struct {
+	CHANNEL string
+	TIME    []string
+}
+
 var (
 	debug, logging, reacji bool
 	label, reacjiStr       string
@@ -54,6 +59,7 @@ var (
 	rules                  []ruleData
 	postids                []string
 	alerts                 []alertData
+	reminder               []reminderData
 )
 
 func main() {
@@ -68,6 +74,8 @@ func main() {
 	_reverse := flag.Bool("reverse", false, "[-reverse=check rule to reverse (true is enable)]")
 	_IDLookup := flag.Bool("idlookup", true, "[-idlookup=resolve to ID definition (true is enable)]")
 	_reacji := flag.Bool("reacji", false, "[-reacji=Slack: reacji channeler mode (true is enable)]")
+	_reminder := flag.Int("reminder", 30, "[-reminder=Interval for posting reminders (Seconds). ]")
+	_clearReminder := flag.Bool("clearReminder", false, "[-clearReminder=clear reminder channel and exit mode.]")
 
 	flag.Parse()
 
@@ -114,6 +122,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *_clearReminder == true {
+		clearReminder(api)
+		os.Exit(0)
+	}
+
 	if *_onlyReport == true {
 		incident(api, *_verbose, *_reverse)
 		os.Exit(0)
@@ -145,11 +158,82 @@ func main() {
 
 	ruleChecker(api, *_reverse)
 
+	go func() {
+		for {
+			time.Sleep(time.Second * time.Duration(*_reminder))
+			reminderPost(api, *_reverse)
+		}
+	}()
+
 	for {
 		incident(api, *_verbose, *_reverse)
 		time.Sleep(time.Hour * time.Duration(*_loop))
 	}
 	os.Exit(0)
+}
+
+func clearReminder(api *slack.Client) {
+	for i := 0; i < len(reminder); i++ {
+		prm := slack.GetConversationHistoryParameters{ChannelID: reminder[i].CHANNEL, Limit: 100}
+		res, err := api.GetConversationHistory(&prm)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+
+		for _, m := range res.Messages {
+			_, _, err := api.DeleteMessage(reminder[i].CHANNEL, m.Timestamp)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(-1)
+			}
+			time.Sleep(1 * time.Second)
+		}
+		fmt.Println(reminder[i].CHANNEL, " messages clear")
+	}
+}
+
+func reminderPost(api *slack.Client, reverse bool) {
+	const layout = "15:04:05"
+	t := time.Now()
+	nowTime := strings.Split(t.Format(layout), ":")[0]
+	debugLog("nowTime: " + nowTime)
+
+	for x := 0; x < len(reminder); x++ {
+		rFlag := false
+		for r := 0; r < len(reminder[x].TIME); r++ {
+			if rFlag == false {
+				debugLog("messageRegex: " + reminder[x].TIME[r])
+				messageRegex := regexp.MustCompile(reminder[x].TIME[r])
+
+				if messageRegex.MatchString(nowTime) == true {
+					debugLog("messageRegex: OK")
+					for i := 0; i < len(incidents); i++ {
+						params := slack.GetConversationHistoryParameters{ChannelID: incidents[i].CHANNNEL, Limit: incidents[i].LIMIT}
+						messages, err := api.GetConversationHistory(&params)
+						if err != nil {
+							fmt.Printf("incident not get: %s\n", err)
+							return
+						}
+
+						cnt := 0
+						for _, message := range messages.Messages {
+							name := checkReaction(api, message.Reactions)
+							if name == "" && strings.Index(message.Text, "Hotline Alert") == -1 {
+								debugLog(message.Text)
+								cnt = cnt + 1
+							}
+						}
+
+						if cnt > 0 {
+							postMessageStr(api, reminder[x].CHANNEL, "", incidents[i].CHANNNEL+": alert exsits! ("+strconv.Itoa(cnt)+")")
+							rFlag = true
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func testRule(message string, reverse bool) {
@@ -280,7 +364,6 @@ func incident(api *slack.Client, verbose, reverse bool) {
 			}
 		}
 	}
-
 }
 
 func postTextFile(api *slack.Client, strs, repChan, dates string) {
@@ -339,7 +422,7 @@ func Exists(filename string) bool {
 
 func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji"}
+	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji", "Reminder"}
 
 	rules = nil
 	incidents = nil
@@ -347,6 +430,7 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	report = ""
 	postids = nil
 	alerts = nil
+	reminder = nil
 
 	cfg, err := ini.LoadSources(loadOptions, configFile)
 	if err != nil {
@@ -397,6 +481,7 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	setStructs(IDLookup, usersMap, channelsMap, "PostID", cfg.Section("PostID").Body(), 4)
 	setStructs(IDLookup, usersMap, channelsMap, "Hotline", cfg.Section("Hotline").Body(), 5)
 	setStructs(IDLookup, usersMap, channelsMap, "Reacji", cfg.Section("Reacji").Body(), 6)
+	setStructs(IDLookup, usersMap, channelsMap, "Reminder", cfg.Section("Reminder").Body(), 7)
 }
 
 func setStructs(IDLookup bool, users, channels map[string]string, configType, datas string, flag int) {
@@ -408,6 +493,15 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 				strs := strings.Split(v, "\t")
 
 				switch flag {
+				case 7:
+					if len(strs) > 1 {
+						var strr []string
+
+						for i := 1; i < len(strs); i++ {
+							strr = append(strr, strs[i])
+						}
+						reminder = append(reminder, reminderData{CHANNEL: setChannelStr(IDLookup, channels, strs[0]), TIME: strr})
+					}
 				case 5:
 					if len(strs) > 1 {
 						var strr []string
