@@ -35,6 +35,10 @@ note) No change in code.<br>
 
 - Added **reminder function** and ability to **delete remarks on reminder channels**.
 
+### v0.7
+
+- Fixed a bug in Reacji mode that prevented the system from responding to text-only messages.
+
 ![image](https://user-images.githubusercontent.com/22161385/164969202-53e05b2a-631e-4e4d-b673-8ac2365cd1e8.png)
 
 # Solution
