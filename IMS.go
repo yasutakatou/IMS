@@ -60,6 +60,7 @@ var (
 	postids                []string
 	alerts                 []alertData
 	reminder               []reminderData
+	reacjiid               []string
 )
 
 func main() {
@@ -422,7 +423,7 @@ func Exists(filename string) bool {
 
 func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji", "Reminder"}
+	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji", "Reminder", "ReacjiID"}
 
 	rules = nil
 	incidents = nil
@@ -431,6 +432,7 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	postids = nil
 	alerts = nil
 	reminder = nil
+	reacjiid = nil
 
 	cfg, err := ini.LoadSources(loadOptions, configFile)
 	if err != nil {
@@ -482,13 +484,14 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	setStructs(IDLookup, usersMap, channelsMap, "Hotline", cfg.Section("Hotline").Body(), 5)
 	setStructs(IDLookup, usersMap, channelsMap, "Reacji", cfg.Section("Reacji").Body(), 6)
 	setStructs(IDLookup, usersMap, channelsMap, "Reminder", cfg.Section("Reminder").Body(), 7)
+	setStructs(IDLookup, usersMap, channelsMap, "ReacjiID", cfg.Section("ReacjiID").Body(), 8)
 }
 
 func setStructs(IDLookup bool, users, channels map[string]string, configType, datas string, flag int) {
 	debugLog(" -- " + configType + " --")
 
 	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
-		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 && flag != 6 {
+		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 && flag != 6 && flag != 8 {
 			if strings.Index(v, "\t") != -1 {
 				strs := strings.Split(v, "\t")
 
@@ -541,6 +544,9 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 			debugLog(v)
 		} else if flag == 6 {
 			reacjiStr = v
+			debugLog(v)
+		} else if flag == 8 {
+			reacjiid = append(reacjiid, setUserStr(IDLookup, users, v))
 			debugLog(v)
 		}
 	}
@@ -666,7 +672,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 
 							if reverse == true {
 								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
-									if len(ev.Text) == 0 {
+									if reacji == true && checkReacji(ev.BotID) == true {
 										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
 									} else {
 										postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
@@ -676,7 +682,7 @@ func ruleChecker(api *slack.Client, reverse bool) {
 								}
 							} else {
 								if result != 0 && channelMatch(ev.Channel) == false {
-									if len(ev.Text) == 0 {
+									if reacji == true && checkReacji(ev.BotID) == true {
 										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
 									} else {
 										postMessage(api, result-1, ruleInt, mess)
@@ -705,6 +711,15 @@ func ruleChecker(api *slack.Client, reverse bool) {
 	}()
 
 	go client.Run()
+}
+
+func checkReacji(botID string) bool {
+	for i := 0; i < len(reacjiid); i++ {
+		if botID == reacjiid[i] {
+			return true
+		}
+	}
+	return false
 }
 
 func alertUsers() string {
