@@ -41,6 +41,10 @@ note) No change in code.<br>
 
 - Fixed a bug in Reacji mode that prevented the system from responding to text-only messages.
 
+### v0.8
+
+- Allow defining user IDs to be forwarded by **Reacji**.
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -340,6 +344,16 @@ alert	.*1.*	.*2.*
 note) In the above example, We'll keep you posted on Channel A from 10-24.<br>
 note) **not only single define but can write plural rules**.<br>
 
+## [ReacjiID]
+
+The user ID defined here will be **transferred by Reacji**. Specifies primarily **webhook bots**.<br>
+
+```
+datadog
+```
+
+note) **not only single define but can write plural rules**.<br>
+
 ## example
 
 ```
@@ -429,6 +443,34 @@ Hot1	adminuser	here
 warning
 [Reminder]
 alert	.*1.*	.*2.*
+```
+
+### 0.8
+
+```
+[Rules]
+.*Error.*	.*:.*:.*	[Error]	CHANNEL1	Hot1
+.*Warn.*	.*:.*:.*	[Warn]	CHANNEL1	No
+.*Info.*	.*:.*:.*	[Info]	CHANNEL1	No
+.*Debug.*	.*:.*:.*	[Debug]	CHANNEL1	No
+[Incidents]
+CHANNEL1	incidents	20
+DEFAULT	incidents	[Alert]	
+[Label]
+white_check_mark
+[Report]
+rep
+[PostID]
+user
+adminuser
+[Hotline]
+Hot1	adminuser	here
+[Reacji]
+warning
+[Reminder]
+alert	.*1.*	.*2.*
+[ReacjiID]
+datadog
 ```
 
 # options
