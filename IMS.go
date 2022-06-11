@@ -61,6 +61,7 @@ var (
 	alerts                 []alertData
 	reminder               []reminderData
 	reacjiid               []string
+	MgmtReport             []string
 )
 
 func main() {
@@ -248,6 +249,19 @@ func testRule(message string, reverse bool) {
 	}
 }
 
+func checkMgmtReport(ID string) bool {
+	if MgmtReport[0] == "" {
+		return true
+	}
+
+	for i := 0; i < len(MgmtReport); i++ {
+		if MgmtReport[i] == ID {
+			return true
+		}
+	}
+	return false
+}
+
 func incident(api *slack.Client, verbose, reverse bool) {
 	const layout = "2006/01/02 15:04:05"
 	t := time.Now()
@@ -269,99 +283,108 @@ func incident(api *slack.Client, verbose, reverse bool) {
 				postMessageStr(api, report, "", dates)
 			}
 
-			ret = ""
-			if strings.Index(message.Text, "<") != -1 && strings.Index(message.Text, ">") != -1 {
-
-				if reverse == true {
-					name := checkReaction(api, message.Reactions)
-
-					if strings.Index(message.Text, "Hotline Alert") == -1 {
-						if verbose == true {
-							if name == "" {
-								stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
-								debugLog(stra)
-								ret = ret + stra + "\n"
-							} else {
-								stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
-								debugLog(stra)
-								ret = ret + stra + "\n"
-							}
-						} else {
-							if name == "" {
-								stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
-								debugLog(stra)
-								ret = ret + stra + "\n"
-							}
-						}
-						postMessageStr(api, report, "", ret)
-					}
-				} else {
-					actualAttachmentJson, err := json.Marshal(message.Attachments)
-					if err != nil {
-						fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
-					}
-					mess := string(actualAttachmentJson)
-					result, ruleInt := checkMessage(mess)
-					name := checkReaction(api, message.Reactions)
-
-					if result > 0 && strings.Index(message.Text, "Hotline Alert") == -1 {
-						if verbose == true {
-							if name == "" {
-								stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
-								debugLog(stra)
-								ret = ret + stra + "\n"
-							} else {
-								stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
-								debugLog(stra)
-								ret = ret + stra + "\n"
-							}
-						} else {
-							if name == "" {
-								stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
-								debugLog(stra)
-								ret = ret + stra + "\n"
-							}
-						}
-						postMessageStr(api, report, rules[ruleInt].HEAD, ret)
-					}
-				}
+			postId := ""
+			if len(message.BotID) > 0 {
+				postId = message.BotID
 			} else {
-				mess := message.Text
+				postId = message.User
+			}
 
-				if len(mess) == 0 {
-					actualAttachmentJson, err := json.Marshal(message.Attachments)
-					if err != nil {
-						fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
-					}
-					mess = string(actualAttachmentJson)
-				}
+			ret = ""
+			if checkMgmtReport(postId) == true {
+				if strings.Index(message.Text, "<") != -1 && strings.Index(message.Text, ">") != -1 {
 
-				if len(mess) > 0 && mess != "null" {
-					hlen := strings.Index(mess, "[Hotline Alert!]")
-					if hlen != -1 {
-						mess = mess[:hlen]
-					}
-					name := checkReaction(api, message.Reactions)
+					if reverse == true {
+						name := checkReaction(api, message.Reactions)
 
-					if verbose == true {
-						if name == "" {
-							stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
-							debugLog(stra)
-							ret = ret + stra + "\n"
-						} else {
-							stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
-							debugLog(stra)
-							ret = ret + stra + "\n"
+						if strings.Index(message.Text, "Hotline Alert") == -1 {
+							if verbose == true {
+								if name == "" {
+									stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+									debugLog(stra)
+									ret = ret + stra + "\n"
+								} else {
+									stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+									debugLog(stra)
+									ret = ret + stra + "\n"
+								}
+							} else {
+								if name == "" {
+									stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+									debugLog(stra)
+									ret = ret + stra + "\n"
+								}
+							}
+							postMessageStr(api, report, "", ret)
 						}
 					} else {
-						if name == "" {
-							stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
-							debugLog(stra)
-							ret = ret + stra + "\n"
+						actualAttachmentJson, err := json.Marshal(message.Attachments)
+						if err != nil {
+							fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
+						}
+						mess := string(actualAttachmentJson)
+						result, ruleInt := checkMessage(mess)
+						name := checkReaction(api, message.Reactions)
+
+						if result > 0 && strings.Index(message.Text, "Hotline Alert") == -1 {
+							if verbose == true {
+								if name == "" {
+									stra := "NG [message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+									debugLog(stra)
+									ret = ret + stra + "\n"
+								} else {
+									stra := "OK [message] " + message.Text + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+									debugLog(stra)
+									ret = ret + stra + "\n"
+								}
+							} else {
+								if name == "" {
+									stra := "[message] " + message.Text + " [date] " + convertTime(message.Timestamp)
+									debugLog(stra)
+									ret = ret + stra + "\n"
+								}
+							}
+							postMessageStr(api, report, rules[ruleInt].HEAD, ret)
 						}
 					}
+				} else {
+					mess := message.Text
+
+					if len(mess) == 0 {
+						actualAttachmentJson, err := json.Marshal(message.Attachments)
+						if err != nil {
+							fmt.Println("expected no error unmarshaling attachment with blocks, got: %v", err)
+						}
+						mess = string(actualAttachmentJson)
+					}
+
+					if len(mess) > 0 && mess != "null" {
+						hlen := strings.Index(mess, "[Hotline Alert!]")
+						if hlen != -1 {
+							mess = mess[:hlen]
+						}
+						name := checkReaction(api, message.Reactions)
+
+						if verbose == true {
+							if name == "" {
+								stra := "NG [message] " + mess + " [date] " + convertTime(message.Timestamp)
+								debugLog(stra)
+								ret = ret + stra + "\n"
+							} else {
+								stra := "OK [message] " + mess + " [date] " + convertTime(message.Timestamp) + " [user] " + name
+								debugLog(stra)
+								ret = ret + stra + "\n"
+							}
+						} else {
+							if name == "" {
+								stra := "[message] " + mess + " [date] " + convertTime(message.Timestamp)
+								debugLog(stra)
+								ret = ret + stra + "\n"
+							}
+						}
+					}
+					postTextFile(api, ret, report, dates)
 				}
-				postTextFile(api, ret, report, dates)
 			}
 		}
 	}
@@ -423,7 +446,7 @@ func Exists(filename string) bool {
 
 func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji", "Reminder", "ReacjiID"}
+	loadOptions.UnparseableSections = []string{"Rules", "Incidents", "Label", "Report", "PostID", "Hotline", "Reacji", "Reminder", "ReacjiID", "MgmtReport"}
 
 	rules = nil
 	incidents = nil
@@ -433,6 +456,7 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	alerts = nil
 	reminder = nil
 	reacjiid = nil
+	MgmtReport = nil
 
 	cfg, err := ini.LoadSources(loadOptions, configFile)
 	if err != nil {
@@ -485,13 +509,14 @@ func loadConfig(api *slack.Client, configFile string, IDLookup bool) {
 	setStructs(IDLookup, usersMap, channelsMap, "Reacji", cfg.Section("Reacji").Body(), 6)
 	setStructs(IDLookup, usersMap, channelsMap, "Reminder", cfg.Section("Reminder").Body(), 7)
 	setStructs(IDLookup, usersMap, channelsMap, "ReacjiID", cfg.Section("ReacjiID").Body(), 8)
+	setStructs(IDLookup, usersMap, channelsMap, "MgmtReport", cfg.Section("MgmtReport").Body(), 9)
 }
 
 func setStructs(IDLookup bool, users, channels map[string]string, configType, datas string, flag int) {
 	debugLog(" -- " + configType + " --")
 
 	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
-		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 && flag != 6 && flag != 8 {
+		if len(v) > 0 && flag != 2 && flag != 3 && flag != 4 && flag != 6 && flag != 8 && flag != 9 {
 			if strings.Index(v, "\t") != -1 {
 				strs := strings.Split(v, "\t")
 
@@ -547,6 +572,9 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 			debugLog(v)
 		} else if flag == 8 {
 			reacjiid = append(reacjiid, setUserStr(IDLookup, users, v))
+			debugLog(v)
+		} else if flag == 9 {
+			MgmtReport = append(MgmtReport, setUserStr(IDLookup, users, v))
 			debugLog(v)
 		}
 	}
