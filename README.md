@@ -45,6 +45,10 @@ note) No change in code.<br>
 
 - Allow defining user IDs to be forwarded by **Reacji**.
 
+### v0.9
+
+- Added the ability to **check the speaker** in the incident management channel.
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -352,7 +356,25 @@ The user ID defined here will be **transferred by Reacji**. Specifies primarily 
 datadog
 ```
 
+
 note) **not only single define but can write plural rules**.<br>
+
+## [MgmtReport]
+
+Added the ability to **check the speaker** in the incident management channel.<br>
+Messages from the ID defined here will be **checked** and output to channel for **report**.<br>
+**If empty, all submissions are forwarded to the reporting channel.**
+
+```
+[MgmtReport]
+U024ZT3BHU5
+```
+
+Similar to [PostID], but this function was implemented because there was a request that it would be better to handle **manager's instructions as Issues** when used by a team.<br>
+<br>
+note) **not only single define but can write plural IDs**.<br>
+note) You can also specify the ID of the **bot**.<br>
+note) You can also specify a user name instead of an ID.<br>
 
 ## example
 
@@ -419,7 +441,7 @@ Hot1	adminuser	here
 warning
 ```
 
-### 0.6
+### v0.6
 
 ```
 [Rules]
@@ -445,7 +467,7 @@ warning
 alert	.*1.*	.*2.*
 ```
 
-### 0.8
+### v0.8
 
 ```
 [Rules]
@@ -471,6 +493,35 @@ warning
 alert	.*1.*	.*2.*
 [ReacjiID]
 datadog
+```
+
+### v0.9
+
+```
+[Rules]
+.*Error.*	.*:.*:.*	[Error]	CHANNEL1	Hot1
+.*Warn.*	.*:.*:.*	[Warn]	CHANNEL1	No
+.*Info.*	.*:.*:.*	[Info]	CHANNEL1	No
+.*Debug.*	.*:.*:.*	[Debug]	CHANNEL1	No
+[Incidents]
+CHANNEL1	incidents	20
+DEFAULT	incidents	[Alert]	
+[Label]
+white_check_mark
+[Report]
+rep
+[PostID]
+user
+adminuser
+[Hotline]
+Hot1	adminuser	here
+[Reacji]
+warning
+[Reminder]
+alert	.*1.*	.*2.*
+[ReacjiID]
+datadog
+[MgmtReport]
 ```
 
 # options
