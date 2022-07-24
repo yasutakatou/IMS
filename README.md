@@ -49,6 +49,11 @@ note) No change in code.<br>
 
 - Added the ability to **check the speaker** in the incident management channel.
 
+### v0.91
+
+- Alerts with referring URLs now forward content to the default channel
+	- With Reaacji Channeler , it is difficult to understand the content of forwarded alerts, so we have made the forwarding at least include the content of those with links.
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
