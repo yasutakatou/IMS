@@ -701,7 +701,11 @@ func ruleChecker(api *slack.Client, reverse bool) {
 							if reverse == true {
 								if result == 0 && ev.Channel != report && ev.Channel != defaultChannel[0] {
 									if reacji == true && checkReacji(ev.BotID) == true {
-										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+										if strings.Index(mess, "http") != -1 {
+											postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
+										} else {
+											markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+										}
 									} else {
 										postMessageStr(api, defaultChannel[0], defaultChannel[1], mess)
 									}
@@ -711,7 +715,11 @@ func ruleChecker(api *slack.Client, reverse bool) {
 							} else {
 								if result != 0 && channelMatch(ev.Channel) == false {
 									if reacji == true && checkReacji(ev.BotID) == true {
-										markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+										if strings.Index(mess, "http") != -1 {
+											postMessage(api, result-1, ruleInt, mess)
+										} else {
+											markReaction(api, ev.Channel, ev.TimeStamp, reacjiStr)
+										}
 									} else {
 										postMessage(api, result-1, ruleInt, mess)
 									}
