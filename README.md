@@ -54,6 +54,11 @@ note) No change in code.<br>
 - Alerts with referring URLs now forward content to the default channel
 	- With Reaacji Channeler , it is difficult to understand the content of forwarded alerts, so we have made the forwarding at least include the content of those with links.
 
+### v0.92
+
+- Added mode to reverse definition behavior
+	- The reverse action can be specified by prefixing the alert rule with "!".
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -257,6 +262,16 @@ note) Date Format is "2006/01/02 15:04:05 Mon(-Sun)".<br>
   ```
 
 note) **not only single define but can write plural rules**.<br>
+
+### v0.92
+
+```
+.*Debug.*	!.*:.*:.*	[Debug]	CHANNEL1	No
+```
+
+The reverse action can be specified by prefixing the alert rule with "!".<br>
+<br>
+note) Note that when used at the same time as option -reverse, **the opposite is true**.
 
 ## [Incidents]
 
