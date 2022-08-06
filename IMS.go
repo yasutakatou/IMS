@@ -29,6 +29,7 @@ import (
 type ruleData struct {
 	TARGET  string
 	EXCLUDE string
+	REVERSE bool
 	HEAD    string
 	LABEL   string
 	HOTLINE string
@@ -553,7 +554,12 @@ func setStructs(IDLookup bool, users, channels map[string]string, configType, da
 					}
 				case 0:
 					if len(strs) == 5 {
-						rules = append(rules, ruleData{TARGET: strs[0], EXCLUDE: strs[1], HEAD: strs[2], LABEL: strs[3], HOTLINE: strs[4]})
+						rFlag := false
+						if strs[1][0] == byte('!') {
+							rFlag = true
+							strs[1] = strs[1][1:]
+						}
+						rules = append(rules, ruleData{TARGET: strs[0], EXCLUDE: strs[1], REVERSE: rFlag, HEAD: strs[2], LABEL: strs[3], HOTLINE: strs[4]})
 						debugLog(v)
 					}
 				}
@@ -833,10 +839,17 @@ func checkMessage(message string) (int, int) {
 
 			debugLog("dateRegex: " + rules[i].EXCLUDE)
 			dateRegex := regexp.MustCompile(rules[i].EXCLUDE)
-			if dateRegex.MatchString(nowDate) == true {
-				debugLog("dateRegex: ok")
-				if act := incidentCheck(rules[i].LABEL); act != 0 {
-					return act, i
+			if rules[i].REVERSE == false {
+				if dateRegex.MatchString(nowDate) == true {
+					debugLog("dateRegex: ok")
+					if act := incidentCheck(rules[i].LABEL); act != 0 {
+						return act, i
+					}
+				}
+			} else {
+				if dateRegex.MatchString(nowDate) == true {
+					debugLog("dateRegex: ok (reverse)")
+					return 0, 0
 				}
 			}
 		}
