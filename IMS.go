@@ -79,6 +79,8 @@ func main() {
 	_reacji := flag.Bool("reacji", false, "[-reacji=Slack: reacji channeler mode (true is enable)]")
 	_reminder := flag.Int("reminder", 30, "[-reminder=Interval for posting reminders (Seconds). ]")
 	_clearReminder := flag.Bool("clearReminder", false, "[-clearReminder=clear reminder channel and exit mode.]")
+	_noincident := flag.Bool("noincident", false, "[-noincident=No incident management mode.]")
+	_noreminder := flag.Bool("noreminder", false, "[-noreminder=No-reminder mode.]")
 
 	flag.Parse()
 
@@ -161,16 +163,20 @@ func main() {
 
 	ruleChecker(api, *_reverse)
 
-	go func() {
-		for {
-			time.Sleep(time.Second * time.Duration(*_reminder))
-			reminderPost(api, *_reverse)
-		}
-	}()
+	if *_noreminder == false {
+		go func() {
+			for {
+				time.Sleep(time.Second * time.Duration(*_reminder))
+				reminderPost(api, *_reverse)
+			}
+		}()
+	}
 
 	for {
-		incident(api, *_verbose, *_reverse)
-		time.Sleep(time.Hour * time.Duration(*_loop))
+		if *_noincident == false {
+			incident(api, *_verbose, *_reverse)
+			time.Sleep(time.Hour * time.Duration(*_loop))
+		}
 	}
 	os.Exit(0)
 }
