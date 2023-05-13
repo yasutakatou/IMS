@@ -59,7 +59,7 @@ note) No change in code.<br>
 - Added mode to reverse definition behavior
 	- The reverse action can be specified by prefixing the alert rule with "!".
 
-### v.01
+### v1.0
 
 - add No incident management mode
 - add No-reminder mode
