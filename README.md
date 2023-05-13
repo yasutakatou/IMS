@@ -59,6 +59,11 @@ note) No change in code.<br>
 - Added mode to reverse definition behavior
 	- The reverse action can be specified by prefixing the alert rule with "!".
 
+### v.01
+
+- add No incident management mode
+- add No-reminder mode
+
 # Solution
 
 As the center of communication at work has been replaced from e-mail to chat, you may have changed the alert notification destination of your monitoring tool to chat.
@@ -561,6 +566,10 @@ datadog
         [-log=logging mode (true is enable)]
   -loop int
         [-loop=incident check loop time (Hour). ] (default 24)
+  -noincident
+        [-noincident=No incident management mode.]
+  -noreminder
+        [-noreminder=No-reminder mode.]
   -onlyReport
         [-onlyReport=incident check and exit mode.]
   -reacji
@@ -602,6 +611,14 @@ Specify the log file name.
 ## -loop
 
 Interval between incidents checks (in Hours). **Default is 24 Hour**.
+
+## -noincident
+
+No incident management mode.
+
+## -noreminder
+
+No-reminder mode.
 
 ## -onlyReport
 
